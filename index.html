@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hard Messenger - Gelişmiş Ağ</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        /* --- GENEL TASARIM --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { height: 100%; background-color: #121212; color: #fff; overflow: hidden; }
+        
+        /* GİRİŞ EKRANI */
+        .login-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1f2937, #111827);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; transition: opacity 0.5s;
+        }
+        .login-box { background: #1e1e1e; padding: 30px; border-radius: 12px; text-align: center; border: 1px solid #333; width: 90%; max-width: 400px; box-shadow: 0 15px 30px rgba(0,0,0,0.5); }
+        .login-box h1 { font-size: 24px; margin-bottom: 10px; color: #3b82f6; }
+        .login-box p { font-size: 14px; color: #9ca3af; margin-bottom: 20px; }
+        .login-box input[type="text"] { width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #444; background: #252526; color: white; font-size: 16px; margin-bottom: 15px; text-align: center; outline: none; }
+        .login-box input[type="text"]:focus { border-color: #3b82f6; }
+        .remember-wrapper { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 14px; color: #ccc; cursor: pointer; }
+        .login-box button { width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        .login-box button:hover { background: #2563eb; }
+
+        /* ANA UYGULAMA DÜZENİ */
+        .messenger-app { display: none; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto; background: #0f0f0f; position: relative; }
+
+        /* SOL MENÜ (Bağlantı ve Arkadaşlar) */
+        .sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; height: 100%; }
+        .profile-section { background: linear-gradient(135deg, #1f2937, #111827); padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .profile-info h2 { font-size: 11px; color: #9ca3af; text-transform: uppercase; margin-bottom: 5px; }
+        .username-display { font-size: 20px; font-weight: bold; color: #10b981; }
+        .btn-logout { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-logout:hover { background: #dc2626; }
+
+        .friends-section { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .add-friend-box { padding: 15px; border-bottom: 1px solid #333; display: flex; gap: 8px; }
+        .add-friend-box input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #252526; color: white; outline: none; font-size: 14px; }
+        .add-friend-box button { padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        .friends-list { list-style: none; overflow-y: auto; flex: 1; }
+        .friend-item { padding: 15px; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
+        .friend-item:hover { background: #252526; }
+        .friend-name { font-weight: bold; font-size: 15px; }
+        .btn-delete { background: transparent; color: #666; border: none; font-size: 16px; cursor: pointer; }
+        .btn-delete:hover { color: #ef4444; }
+
+        .status-box { padding: 15px; font-size: 13px; text-align: center; background: #1a1a1a; border-top: 1px solid #333; color: #9ca3af; }
+
+        /* SAĞ MENÜ (Sohbet Ekranı) */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: #0f0f0f; height: 100%; position: relative; }
+        .chat-header { background: #1e1e1e; padding: 15px 20px; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
+        .chat-header-info h3 { font-size: 16px; margin-bottom: 2px; }
+        .chat-header-info span { font-size: 12px; color: #10b981; }
+        .btn-back { display: none; background: transparent; color: #3b82f6; border: none; font-size: 16px; font-weight: bold; cursor: pointer; padding-right: 15px; }
+
+        .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .message { max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .message.sent { background: #2563eb; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .message.received { background: #2d2d30; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .message.ping { background: transparent; color: #ef4444; font-weight: bold; font-size: 18px; align-self: center; border: 2px dashed #ef4444; padding: 8px 15px; }
+        .msg-time { display: block; font-size: 11px; margin-top: 5px; opacity: 0.7; text-align: right; }
+        .status-d { color: #93c5fd; font-weight: bold; margin-left: 5px; }
+        .status-r { color: #10b981; font-weight: bold; margin-left: 5px; }
+
+        .chat-input-area { display: flex; padding: 15px; background: #1e1e1e; border-top: 1px solid #333; gap: 10px; align-items: center; }
+        #message-input { flex: 1; padding: 15px; border: 1px solid #444; border-radius: 25px; background: #252526; color: white; font-size: 15px; outline: none; }
+        .btn-action { background: #3b82f6; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .btn-ping { background: #ef4444; font-size: 12px; }
+
+        /* MOBİL UYARLAMA */
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; position: absolute; z-index: 10; transition: transform 0.3s; }
+            .chat-area { width: 100%; position: absolute; z-index: 5; }
+            .sidebar.hidden { transform: translateX(-100%); }
+            .btn-back { display: block; }
+        }
+
+        /* Titreme Efekti */
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-3px, 2px); }
+            40% { transform: translate(3px, -2px); }
+            60% { transform: translate(-3px, -2px); }
+            80% { transform: translate(3px, 2px); }
+        }
+        .shake-animation { animation: shake 0.4s; }
+    </style>
+</head>
+<body>
+
+    <div class="login-screen" id="login-screen">
+        <div class="login-box">
+            <h1>Hard Messenger</h1>
+            <p>Ağa bağlanmak için kimliğinizi oluşturun.</p>
+            <input type="text" id="my-username-input" placeholder="Kullanıcı Adınız" maxlength="15" autocomplete="off">
+            <label class="remember-wrapper">
+                <input type="checkbox" id="remember-me" checked> Beni Hatırla
+            </label>
+            <button id="login-btn">Ağa Katıl</button>
+        </div>
+    </div>
+
+    <div class="messenger-app" id="app">
+        
+        <aside class="sidebar" id="sidebar">
+            <div class="profile-section">
+                <div class="profile-info">
+                    <h2>Senin Kimliğin</h2>
+                    <div class="username-display" id="my-username-display">...</div>
+                </div>
+                <button class="btn-logout" id="logout-btn">Çıkış Yap</button>
+            </div>
+            
+            <div class="friends-section">
+                <div class="add-friend-box">
+                    <input type="text" id="new-friend-input" placeholder="Arkadaşının Adı" autocomplete="off">
+                    <button id="add-friend-btn">Ekle</button>
+                </div>
+                
+                <ul class="friends-list" id="friends-list">
+                    </ul>
+            </div>
+
+            <div class="status-box" id="network-status">
+                Durum: Bağlantı Bekleniyor
+            </div>
+        </aside>
+
+        <main class="chat-area" id="chat-area">
+            <header class="chat-header">
+                <button class="btn-back" id="back-btn">❮ Geri</button>
+                <div class="chat-header-info">
+                    <h3 id="chat-title">Bir Kişi Seçin</h3>
+                    <span id="connection-status" style="display:none;">Güvenli Bağlantı Kuruldu</span>
+                </div>
+            </header>
+            
+            <div class="chat-box" id="chat-box">
+                </div>
+
+            <form class="chat-input-area" id="chat-form">
+                <button type="button" class="btn-action btn-ping" id="ping-btn" disabled>PING!</button>
+                <input type="text" id="message-input" placeholder="Mesaj yazın..." autocomplete="off" disabled>
+                <button type="submit" class="btn-action" id="send-btn" disabled>➤</button>
+            </form>
+        </main>
+    </div>
+
+    <script>
+        // --- DEĞİŞKENLER VE SABİTLER ---
+        const PREFIX = "hrmsg-";
+        let peer = null;
+        let currentConnection = null;
+        let myUsername = "";
+        let friends = JSON.parse(localStorage.getItem('hrmsg_friends')) || [];
+
+        // --- DOM ELEMENTLERİ ---
+        const loginScreen = document.getElementById('login-screen');
+        const appScreen = document.getElementById('app');
+        const usernameInput = document.getElementById('my-username-input');
+        const rememberMeCheck = document.getElementById('remember-me');
+        const sidebar = document.getElementById('sidebar');
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message-input');
+        const networkStatus = document.getElementById('network-status');
+        const chatTitle = document.getElementById('chat-title');
+        const friendsListEl = document.getElementById('friends-list');
+
+        // --- 1. OTURUM KONTROLÜ (AÇILIŞTA) ---
+        // Uygulama açıldığında kayıtlı oturum var mı kontrol et
+        window.onload = () => {
+            const savedLocalUser = localStorage.getItem('hrmsg_user');
+            const savedSessionUser = sessionStorage.getItem('hrmsg_user');
+            
+            if (savedLocalUser) {
+                initUser(savedLocalUser); // Kalıcı hesaba gir
+            } else if (savedSessionUser) {
+                initUser(savedSessionUser); // Geçici hesaba gir
+            }
+            renderFriends(); // Her halükarda arkadaşları yükle
+        };
+
+        // --- 2. GİRİŞ YAPMA VE ÇIKIŞ YAPMA ---
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const rawName = usernameInput.value.trim();
+            if (rawName.length < 3) {
+                alert("Kullanıcı adı en az 3 karakter olmalıdır!"); return;
+            }
+            
+            const cleanName = rawName.toLowerCase().replace(/\s+/g, '');
+            
+            // Hafızaya Kaydetme Mantığı
+            if (rememberMeCheck.checked) {
+                localStorage.setItem('hrmsg_user', cleanName);
+            } else {
+                sessionStorage.setItem('hrmsg_user', cleanName);
+            }
+
+            initUser(cleanName);
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            if(confirm("Çıkış yapmak istediğinize emin misiniz?")) {
+                localStorage.removeItem('hrmsg_user');
+                sessionStorage.removeItem('hrmsg_user');
+                
+                if (currentConnection) currentConnection.close();
+                if (peer) peer.destroy();
+                
+                // Ekranı sıfırla
+                appScreen.style.display = 'none';
+                loginScreen.style.display = 'flex';
+                loginScreen.style.opacity = '1';
+                usernameInput.value = '';
+                disableChat();
+            }
+        });
+
+        // --- 3. KULLANICI BAŞLATMA (PEERJS) ---
+        function initUser(username) {
+            myUsername = username;
+            document.getElementById('my-username-display').innerText = "@" + myUsername;
+
+            peer = new Peer(PREFIX + myUsername);
+
+            peer.on('open', (id) => {
+                loginScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loginScreen.style.display = 'none';
+                    appScreen.style.display = 'flex';
+                }, 300);
+                networkStatus.innerHTML = "Ağa Katıldın <span style='color:#10b981'>● Online</span>";
+            });
+
+            peer.on('connection', (conn) => {
+                currentConnection = conn;
+                setupConnectionEvents(conn);
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    alert("Bu hesap şu an başka bir sekmede/cihazda açık!");
+                    localStorage.removeItem('hrmsg_user');
+                    sessionStorage.removeItem('hrmsg_user');
+                    location.reload();
+                } else {
+                    console.error("Ağ Hatası:", err);
+                }
+            });
+        }
+
+        // --- 4. ARKADAŞ SİSTEMİ ---
+        document.getElementById('add-friend-btn').addEventListener('click', () => {
+            const friendName = document.getElementById('new-friend-input').value.trim().toLowerCase().replace(/\s+/g, '');
+            if (friendName === myUsername) { alert("Kendinizi ekleyemezsiniz!"); return; }
+            if (friendName.length === 0) return;
+            
+            if (!friends.includes(friendName)) {
+                friends.push(friendName);
+                saveFriends();
+                renderFriends();
+            }
+            document.getElementById('new-friend-input').value = '';
+        });
+
+        function saveFriends() {
+            localStorage.setItem('hrmsg_friends', JSON.stringify(friends));
+        }
+
+        function renderFriends() {
+            friendsListEl.innerHTML = '';
+            friends.forEach(friend => {
+                const li = document.createElement('li');
+                li.className = 'friend-item';
+                
+                li.innerHTML = `
+                    <div class="friend-name" onclick="connectToUser('${friend}')">@${friend}</div>
+                    <button class="btn-delete" onclick="deleteFriend('${friend}', event)">✖</button>
+                `;
+                friendsListEl.appendChild(li);
+            });
+        }
+
+        function deleteFriend(friendName, event) {
+            event.stopPropagation(); // Tıklamanın bağlanma olayını tetiklemesini engeller
+            if(confirm(`@${friendName} kişisini silmek istiyor musunuz?`)) {
+                friends = friends.filter(f => f !== friendName);
+                saveFriends();
+                renderFriends();
+            }
+        }
+
+        // --- 5. AĞA BAĞLANMA İŞLEMİ ---
+        // Global fonksiyon yaptık, listeden tıklayınca çalışacak
+        window.connectToUser = function(targetRaw) {
+            networkStatus.innerHTML = `Aranıyor: @${targetRaw}...`;
+            const conn = peer.connect(PREFIX + targetRaw);
+            currentConnection = conn;
+            setupConnectionEvents(conn);
+        };
+
+        // --- 6. BAĞLANTI YÖNETİMİ ---
+        function setupConnectionEvents(conn) {
+            conn.on('open', () => {
+                const targetName = conn.peer.replace(PREFIX, '');
+                chatTitle.innerText = "@" + targetName;
+                document.getElementById('connection-status').style.display = 'block';
+                networkStatus.innerHTML = `Bağlı <span style='color:#3b82f6'>⇄ @${targetName}</span>`;
+                
+                messageInput.disabled = false;
+                document.getElementById('send-btn').disabled = false;
+                document.getElementById('ping-btn').disabled = false;
+                
+                chatBox.innerHTML = '';
+                appendSystemMessage("Bağlantı kuruldu. Artık güvenle mesajlaşabilirsiniz.");
+                
+                // Mobil için: Menüyü kaydır
+                if(window.innerWidth <= 768) { sidebar.classList.add('hidden'); }
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'message') {
+                    appendMessage(data.text, 'received', '');
+                    conn.send({ type: 'read-receipt', id: data.msgId });
+                } 
+                else if (data.type === 'ping') { triggerPing(); }
+                else if (data.type === 'read-receipt') {
+                    const statusSpan = document.getElementById('status-' + data.id);
+                    if (statusSpan) {
+                        statusSpan.innerText = 'R';
+                        statusSpan.className = 'status-r';
+                    }
+                }
+            });
+
+            conn.on('close', () => {
+                appendSystemMessage("Karşı taraf ayrıldı veya bağlantı koptu.");
+                disableChat();
+            });
+        }
+
+        // --- 7. MESAJLAŞMA İŞLEMLERİ ---
+        document.getElementById('chat-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (text === '' || !currentConnection || !currentConnection.open) return;
+
+            const msgId = Date.now().toString();
+            currentConnection.send({ type: 'message', text: text, msgId: msgId });
+            appendMessage(text, 'sent', msgId);
+            messageInput.value = '';
+        });
+
+        document.getElementById('ping-btn').addEventListener('click', () => {
+            if (currentConnection && currentConnection.open) {
+                currentConnection.send({ type: 'ping' });
+                triggerPing(true);
+            }
+        });
+
+        function appendMessage(text, type, msgId) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${type}`;
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            let statusHtml = type === 'sent' ? `<span id="status-${msgId}" class="status-d">D</span>` : '';
+
+            msgDiv.innerHTML = `
+                <div>${text}</div>
+                <span class="msg-time">${time} ${statusHtml}</span>
+            `;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function triggerPing(isSender = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ping';
+            msgDiv.innerText = isSender ? 'PING GÖNDERİLDİ!' : '!!! PING !!!';
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            document.body.classList.add('shake-animation');
+            setTimeout(() => document.body.classList.remove('shake-animation'), 400);
+        }
+
+        function appendSystemMessage(text) {
+            const sysDiv = document.createElement('div');
+            sysDiv.style.textAlign = 'center'; sysDiv.style.color = '#9ca3af'; sysDiv.style.fontSize = '12px'; sysDiv.style.padding = '10px 0';
+            sysDiv.innerText = text;
+            chatBox.appendChild(sysDiv);
+        }
+
+        function disableChat() {
+            chatTitle.innerText = "Bir Kişi Seçin";
+            document.getElementById('connection-status').style.display = 'none';
+            messageInput.disabled = true;
+            document.getElementById('send-btn').disabled = true;
+            document.getElementById('ping-btn').disabled = true;
+            networkStatus.innerHTML = "Ağa Katıldın <span style='color:#10b981'>● Online</span>";
+        }
+
+        // Mobil Geri Butonu
+        document.getElementById('back-btn').addEventListener('click', () => {
+            sidebar.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
