@@ -63,14 +63,31 @@
         .message.sent { background: #2563eb; align-self: flex-end; border-bottom-right-radius: 2px; }
         .message.received { background: #2d2d30; align-self: flex-start; border-bottom-left-radius: 2px; }
         .message.ping { background: transparent; color: #ef4444; font-weight: bold; font-size: 18px; align-self: center; border: 2px dashed #ef4444; padding: 8px 15px; }
+        
+        /* SES OYNATICI TASARIMI */
+        audio { height: 35px; max-width: 200px; outline: none; border-radius: 20px; }
+        audio::-webkit-media-controls-panel { background-color: #f1f5f9; }
+
         .msg-time { display: block; font-size: 11px; margin-top: 5px; opacity: 0.7; text-align: right; }
         .status-d { color: #93c5fd; font-weight: bold; margin-left: 5px; }
         .status-r { color: #10b981; font-weight: bold; margin-left: 5px; }
 
         .chat-input-area { display: flex; padding: 15px; background: #1e1e1e; border-top: 1px solid #333; gap: 10px; align-items: center; }
-        #message-input { flex: 1; padding: 15px; border: 1px solid #444; border-radius: 25px; background: #252526; color: white; font-size: 15px; outline: none; }
-        .btn-action { background: #3b82f6; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        #message-input { flex: 1; padding: 15px; border: 1px solid #444; border-radius: 25px; background: #252526; color: white; font-size: 15px; outline: none; transition: 0.3s; }
+        #message-input:disabled { background: #1a1a1a; cursor: not-allowed; }
+        
+        .btn-action { background: #3b82f6; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-ping { background: #ef4444; font-size: 12px; }
+        .btn-mic { background: #10b981; font-size: 18px; }
+        
+        /* Kayıt animasyonu */
+        .btn-mic.recording { background: #ef4444; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
 
         /* MOBİL UYARLAMA */
         @media (max-width: 768px) {
@@ -144,9 +161,10 @@
                 </div>
 
             <form class="chat-input-area" id="chat-form">
-                <button type="button" class="btn-action btn-ping" id="ping-btn" disabled>PING!</button>
+                <button type="button" class="btn-action btn-ping" id="ping-btn" disabled title="Dikkat Çek!">PING!</button>
+                <button type="button" class="btn-action btn-mic" id="mic-btn" disabled title="Ses Kaydet">🎤</button>
                 <input type="text" id="message-input" placeholder="Mesaj yazın..." autocomplete="off" disabled>
-                <button type="submit" class="btn-action" id="send-btn" disabled>➤</button>
+                <button type="submit" class="btn-action" id="send-btn" disabled title="Gönder">➤</button>
             </form>
         </main>
     </div>
@@ -159,6 +177,11 @@
         let myUsername = "";
         let friends = JSON.parse(localStorage.getItem('hrmsg_friends')) || [];
 
+        // Ses Kaydı Değişkenleri
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
         // --- DOM ELEMENTLERİ ---
         const loginScreen = document.getElementById('login-screen');
         const appScreen = document.getElementById('app');
@@ -170,6 +193,7 @@
         const networkStatus = document.getElementById('network-status');
         const chatTitle = document.getElementById('chat-title');
         const friendsListEl = document.getElementById('friends-list');
+        const micBtn = document.getElementById('mic-btn');
 
         // --- BİLDİRİM SİSTEMLERİ (SES, TİTREŞİM, SEKME) ---
         let originalTitle = document.title;
@@ -198,7 +222,6 @@
         }
 
         function playNotification(isPing = false) {
-            // 1. Titreşim
             if ("vibrate" in navigator) {
                 if (isPing) {
                     navigator.vibrate([300, 100, 300, 100, 300]); 
@@ -207,7 +230,6 @@
                 }
             }
 
-            // 2. Ses Efekti (Web Audio API)
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const ctx = new AudioContext();
@@ -236,7 +258,6 @@
                 console.warn("Tarayıcı ses çalmayı engelledi.", e);
             }
 
-            // 3. Sekmeyi Uyar
             notifyTab();
         }
 
@@ -246,11 +267,11 @@
             const savedSessionUser = sessionStorage.getItem('hrmsg_user');
             
             if (savedLocalUser) {
-                initUser(savedLocalUser); // Kalıcı hesaba gir
+                initUser(savedLocalUser); 
             } else if (savedSessionUser) {
-                initUser(savedSessionUser); // Geçici hesaba gir
+                initUser(savedSessionUser); 
             }
-            renderFriends(); // Her halükarda arkadaşları yükle
+            renderFriends(); 
         };
 
         // --- 2. GİRİŞ YAPMA VE ÇIKIŞ YAPMA ---
@@ -377,9 +398,11 @@
                 document.getElementById('connection-status').style.display = 'block';
                 networkStatus.innerHTML = `Bağlı <span style='color:#3b82f6'>⇄ @${targetName}</span>`;
                 
+                // Elementleri aktif et
                 messageInput.disabled = false;
                 document.getElementById('send-btn').disabled = false;
                 document.getElementById('ping-btn').disabled = false;
+                micBtn.disabled = false;
                 
                 chatBox.innerHTML = '';
                 appendSystemMessage("Bağlantı kuruldu. Artık güvenle mesajlaşabilirsiniz.");
@@ -391,14 +414,17 @@
                 if (data.type === 'message') {
                     appendMessage(data.text, 'received', '');
                     conn.send({ type: 'read-receipt', id: data.msgId });
-                    
-                    // MESAJ BİLDİRİMİ
                     playNotification(false);
                 } 
+                else if (data.type === 'voice') {
+                    // Gelen ses dosyasını Blob'a dönüştür ve ekrana yazdır
+                    const audioBlob = new Blob([data.audio], { type: 'audio/webm' });
+                    appendVoiceMessage(audioBlob, 'received', '');
+                    conn.send({ type: 'read-receipt', id: data.msgId });
+                    playNotification(false);
+                }
                 else if (data.type === 'ping') { 
                     triggerPing(); 
-                    
-                    // PING BİLDİRİMİ
                     playNotification(true);
                 }
                 else if (data.type === 'read-receipt') {
@@ -416,7 +442,9 @@
             });
         }
 
-        // --- 7. MESAJLAŞMA İŞLEMLERİ ---
+        // --- 7. MESAJLAŞMA İŞLEMLERİ (METİN & SES) ---
+        
+        // Metin Gönderme
         document.getElementById('chat-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const text = messageInput.value.trim();
@@ -428,12 +456,64 @@
             messageInput.value = '';
         });
 
+        // Ping Gönderme
         document.getElementById('ping-btn').addEventListener('click', () => {
             if (currentConnection && currentConnection.open) {
                 currentConnection.send({ type: 'ping' });
                 triggerPing(true);
             }
         });
+
+        // Ses Kaydı ve Gönderme
+        micBtn.addEventListener('click', async () => {
+            if (!currentConnection || !currentConnection.open) return;
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    
+                    mediaRecorder.ondataavailable = event => {
+                        if (event.data.size > 0) audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        audioChunks = [];
+                        
+                        // Sesi Karşı Tarafa Gönder
+                        const msgId = Date.now().toString();
+                        currentConnection.send({ type: 'voice', audio: audioBlob, msgId: msgId });
+                        appendVoiceMessage(audioBlob, 'sent', msgId);
+                        
+                        // Mikrofonu serbest bırak
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    
+                    // Arayüzü kayda göre güncelle
+                    micBtn.classList.add('recording');
+                    messageInput.disabled = true;
+                    messageInput.placeholder = "🔴 Ses kaydediliyor... (Bitirmek için tıklayın)";
+                } catch (err) {
+                    alert("Mikrofon erişimi reddedildi veya bulunamadı.");
+                    console.error("Mikrofon hatası:", err);
+                }
+            } else {
+                // Kaydı durdur
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                // Arayüzü normale döndür
+                micBtn.classList.remove('recording');
+                messageInput.disabled = false;
+                messageInput.placeholder = "Mesaj yazın...";
+            }
+        });
+
+        // --- EKRANA YAZDIRMA FONKSİYONLARI ---
 
         function appendMessage(text, type, msgId) {
             const msgDiv = document.createElement('div');
@@ -443,6 +523,23 @@
 
             msgDiv.innerHTML = `
                 <div>${text}</div>
+                <span class="msg-time">${time} ${statusHtml}</span>
+            `;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendVoiceMessage(blob, type, msgId) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${type}`;
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            let statusHtml = type === 'sent' ? `<span id="status-${msgId}" class="status-d">D</span>` : '';
+            
+            // Blob'u tarayıcıda çalınabilir bir URL'ye dönüştür
+            const audioUrl = URL.createObjectURL(blob);
+
+            msgDiv.innerHTML = `
+                <div><audio controls src="${audioUrl}"></audio></div>
                 <span class="msg-time">${time} ${statusHtml}</span>
             `;
             chatBox.appendChild(msgDiv);
@@ -473,6 +570,7 @@
             messageInput.disabled = true;
             document.getElementById('send-btn').disabled = true;
             document.getElementById('ping-btn').disabled = true;
+            micBtn.disabled = true;
             networkStatus.innerHTML = "Ağa Katıldın <span style='color:#10b981'>● Online</span>";
         }
 
