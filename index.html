@@ -8,7 +8,22 @@
     <style>
         /* --- GENEL TASARIM --- */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body, html { height: 100%; background-color: #121212; color: #fff; overflow: hidden; }
+        
+        /* MOBİL UYGULAMA HİSSİYATI & TAM EKRAN DÜZENİ */
+        html, body {
+            height: 100%; 
+            background-color: #121212; 
+            color: #fff; 
+            overflow: hidden;
+            -webkit-user-select: none; /* Metin seçimini kapat */
+            user-select: none; 
+        }
+
+        /* SADECE GİRDİ ALANLARINDA METİN SEÇİMİNE İZİN VER */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
         
         /* GİRİŞ EKRANI */
         .login-screen {
@@ -41,11 +56,11 @@
         .status-bar::-webkit-scrollbar { display: none; }
         .status-item { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; min-width: 60px; }
         .status-circle { width: 54px; height: 54px; border-radius: 50%; border: 2px solid #555; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; background: #2a2a2a; color: #fff; overflow: hidden; position: relative; }
-        .status-circle.has-status { border-color: #10b981; } /* Yeşil halka */
+        .status-circle.has-status { border-color: #10b981; }
         .status-circle.my-status { border: 2px dashed #9ca3af; background: #1e1e1e; }
         .status-item span { font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60px; text-align: center; }
 
-        /* DURUM OLUŞTURMA MODALI */
+        /* DURUM MODALLARI */
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 200; display: none; justify-content: center; align-items: center; }
         .status-create-box { background: #1e1e1e; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; }
         .status-create-box h3 { margin-bottom: 15px; color: #3b82f6; }
@@ -53,7 +68,6 @@
         .status-create-box button { width: 100%; padding: 10px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
         .btn-cancel { background: transparent !important; border: 1px solid #ef4444 !important; color: #ef4444 !important; }
 
-        /* DURUM İZLEME EKRANI */
         .status-viewer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 300; display: none; flex-direction: column; }
         .status-progress-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.2); position: absolute; top: 0; left: 0; }
         .status-progress-fill { height: 100%; background: white; width: 0%; transition: width 0.1s linear; }
@@ -67,13 +81,11 @@
         .add-friend-box { padding: 15px; border-bottom: 1px solid #333; display: flex; gap: 8px; }
         .add-friend-box input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #444; background: #252526; color: white; outline: none; font-size: 14px; }
         .add-friend-box button { padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        
         .friends-list { list-style: none; overflow-y: auto; flex: 1; }
         .friend-item { padding: 15px; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
         .friend-item:hover { background: #252526; }
         .friend-name { font-weight: bold; font-size: 15px; }
         .btn-delete { background: transparent; color: #666; border: none; font-size: 16px; cursor: pointer; }
-
         .status-box { padding: 15px; font-size: 13px; text-align: center; background: #1a1a1a; border-top: 1px solid #333; color: #9ca3af; }
 
         /* SAĞ MENÜ (Sohbet Ekranı) */
@@ -87,33 +99,56 @@
 
         /* Arama Butonları */
         .header-actions { display: flex; gap: 8px; }
-        .btn-header-call { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: none; }
-        .btn-header-video { background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: none; }
-        .btn-header-end { background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: none; }
+        .btn-header-call, .btn-header-video, .btn-header-end { color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: none; }
+        .btn-header-call { background: #10b981; } .btn-header-video { background: #3b82f6; } .btn-header-end { background: #ef4444; }
         
         /* GÖRÜNTÜLÜ ARAMA ALANI */
         .video-overlay { position: absolute; top: 65px; left: 0; width: 100%; height: calc(100% - 65px); background: #000; z-index: 50; display: none; justify-content: center; align-items: center; }
         #remote-video { width: 100%; height: 100%; object-fit: cover; }
         #local-video { position: absolute; bottom: 90px; right: 20px; width: 100px; height: 150px; object-fit: cover; border-radius: 12px; border: 2px solid #3b82f6; transform: scaleX(-1); }
 
+        /* SOHBET KUTUSU VE MESAJLAR */
         .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         .message { max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
         .message.sent { background: #2563eb; align-self: flex-end; border-bottom-right-radius: 2px; }
         .message.received { background: #2d2d30; align-self: flex-start; border-bottom-left-radius: 2px; }
         .message.ping { background: transparent; color: #ef4444; font-weight: bold; font-size: 18px; align-self: center; border: 2px dashed #ef4444; padding: 8px 15px; }
-        
         audio { height: 35px; max-width: 200px; outline: none; border-radius: 20px; }
         .msg-time { display: block; font-size: 11px; margin-top: 5px; opacity: 0.7; text-align: right; }
         .status-d { color: #93c5fd; font-weight: bold; margin-left: 5px; }
         .status-r { color: #10b981; font-weight: bold; margin-left: 5px; }
 
+        /* GİRDİ ALANI - KİLİTLİYKEN TIKLAMAYI ENGELLEYEN YER */
         .chat-input-area { display: flex; padding: 15px; background: #1e1e1e; border-top: 1px solid #333; gap: 10px; align-items: center; z-index: 10; }
         #message-input { flex: 1; padding: 15px; border: 1px solid #444; border-radius: 25px; background: #252526; color: white; font-size: 15px; outline: none; }
-        #message-input:disabled { background: #1a1a1a; cursor: not-allowed; }
+        
+        #message-input:disabled { 
+            background: #1a1a1a; 
+            cursor: not-allowed; 
+            pointer-events: none; /* Metin seçimini ve tıklamayı tamamen kapatır */
+        }
+        
         .btn-action { background: #3b82f6; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
         .btn-ping { background: #ef4444; font-size: 12px; }
         .btn-mic { background: #10b981; font-size: 18px; }
+        .btn-mic.recording { background: #ef4444; animation: pulse 1s infinite; }
+
+        /* ARAMA MODALI */
+        .call-modal { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #1e1e1e; border: 2px solid #3b82f6; padding: 20px; border-radius: 12px; z-index: 1000; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; }
+        .call-modal h4 { margin-bottom: 15px; font-size: 16px; color: white; }
+        .call-modal-btns { display: flex; gap: 15px; justify-content: center; }
+        .call-modal-btns button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; color: white; }
+        .btn-accept { background: #10b981; } .btn-reject { background: #ef4444; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        @keyframes shake { 0%, 100% { transform: translate(0, 0); } 20%, 80% { transform: translate(-3px, 2px); } 40%, 60% { transform: translate(3px, -2px); } }
+        .shake-animation { animation: shake 0.4s; }
 
         /* MOBİL UYARLAMA */
         @media (max-width: 768px) {
@@ -171,10 +206,6 @@
             </div>
             
             <div class="status-bar" id="status-bar">
-                <div class="status-item" id="btn-my-status">
-                    <div class="status-circle my-status" id="my-status-circle">+</div>
-                    <span>Durum</span>
-                </div>
                 </div>
             
             <div class="friends-section">
@@ -185,12 +216,19 @@
                 <ul class="friends-list" id="friends-list"></ul>
             </div>
 
-            <div class="status-box" id="network-status">
-                Durum: Bağlantı Bekleniyor
-            </div>
+            <div class="status-box" id="network-status">Durum: Bağlantı Bekleniyor</div>
         </aside>
 
         <main class="chat-area" id="chat-area">
+            
+            <div class="call-modal" id="call-modal">
+                <h4 id="caller-name">Birisi arıyor...</h4>
+                <div class="call-modal-btns">
+                    <button class="btn-accept" id="btn-accept-call">📞 Yanıtla</button>
+                    <button class="btn-reject" id="btn-reject-call">✖ Reddet</button>
+                </div>
+            </div>
+
             <header class="chat-header">
                 <button class="btn-back" id="back-btn">❮</button>
                 <div class="chat-header-info">
@@ -216,7 +254,7 @@
             <form class="chat-input-area" id="chat-form">
                 <button type="button" class="btn-action btn-ping" id="ping-btn" disabled>PING!</button>
                 <button type="button" class="btn-action btn-mic" id="mic-btn" disabled>🎤</button>
-                <input type="text" id="message-input" placeholder="Mesaj yazın..." autocomplete="off" disabled>
+                <input type="text" id="message-input" placeholder="Sohbet başlatmak için birini seçin..." autocomplete="off" disabled>
                 <button type="submit" class="btn-action" id="send-btn" disabled>➤</button>
             </form>
 
@@ -228,44 +266,89 @@
         // --- DEĞİŞKENLER VE SABİTLER ---
         const PREFIX = "hrmsg-";
         const ONE_DAY = 24 * 60 * 60 * 1000;
-        let peer = null;
-        let currentConnection = null;
+        let peer = null; 
+        let currentConnection = null; 
         let myUsername = "";
         
         let friends = JSON.parse(localStorage.getItem('hrmsg_friends')) || [];
         let myStatus = JSON.parse(localStorage.getItem('hrmsg_my_status')) || null;
         let friendsStatuses = JSON.parse(localStorage.getItem('hrmsg_friends_statuses')) || {};
 
-        let mediaRecorder; let audioChunks = []; let isRecording = false;
-        let currentCall = null; let localStream = null; let pendingCall = null;
+        let mediaRecorder; 
+        let audioChunks = []; 
+        let isRecording = false;
+        let currentCall = null; 
+        let localStream = null; 
+        let pendingCall = null;
         let statusTimer = null;
 
         // --- DOM ELEMENTLERİ ---
-        const loginScreen = document.getElementById('login-screen');
+        const loginScreen = document.getElementById('login-screen'); 
         const appScreen = document.getElementById('app');
-        const usernameInput = document.getElementById('my-username-input');
+        const usernameInput = document.getElementById('my-username-input'); 
         const sidebar = document.getElementById('sidebar');
-        const chatBox = document.getElementById('chat-box');
+        const chatBox = document.getElementById('chat-box'); 
         const messageInput = document.getElementById('message-input');
-        const networkStatus = document.getElementById('network-status');
+        const networkStatus = document.getElementById('network-status'); 
         const chatTitle = document.getElementById('chat-title');
         
-        // Status Elementleri
-        const statusBar = document.getElementById('status-bar');
-        const myStatusCircle = document.getElementById('my-status-circle');
-        const statusCreateModal = document.getElementById('status-create-modal');
-        const statusViewer = document.getElementById('status-viewer');
-        const statusProgressFill = document.getElementById('status-progress-fill');
-        const statusContentText = document.getElementById('status-content-text');
-        const statusViewerName = document.getElementById('status-viewer-name');
+        const btnStartCall = document.getElementById('btn-start-call'); 
+        const btnStartVideo = document.getElementById('btn-start-video');
+        const btnEndCall = document.getElementById('btn-end-call'); 
+        const callModal = document.getElementById('call-modal');
+        const btnAcceptCall = document.getElementById('btn-accept-call'); 
+        const btnRejectCall = document.getElementById('btn-reject-call');
+        const remoteVideo = document.getElementById('remote-video'); 
+        const localVideo = document.getElementById('local-video');
+        const videoOverlay = document.getElementById('video-overlay'); 
+        const remoteLiveAudio = document.getElementById('remote-live-audio');
+        const micBtn = document.getElementById('mic-btn');
 
-        // --- DURUM (STATUS) SİSTEMİ MANTIĞI ---
-        
+        // Bildirim Sesi ve Titreşimi
+        let isWindowFocused = true;
+        window.addEventListener('focus', () => { isWindowFocused = true; });
+        window.addEventListener('blur', () => { isWindowFocused = false; });
+
+        function playNotification(isPing = false) {
+            if ("vibrate" in navigator) {
+                navigator.vibrate(isPing ? [300, 100, 300] : [150, 50, 150]);
+            }
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator(); 
+                const gain = ctx.createGain();
+                
+                osc.type = isPing ? 'sawtooth' : 'sine'; 
+                if (isPing) { 
+                    osc.frequency.setValueAtTime(800, ctx.currentTime); 
+                    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3); 
+                } else { 
+                    osc.frequency.setValueAtTime(440, ctx.currentTime); 
+                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1); 
+                }
+                
+                gain.gain.setValueAtTime(0.1, ctx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                
+                osc.connect(gain); 
+                gain.connect(ctx.destination); 
+                osc.start(); 
+                osc.stop(ctx.currentTime + 0.4);
+            } catch (e) { 
+                console.warn("Ses engellendi", e); 
+            }
+        }
+
+        // --- DURUM (STATUS) MANTIĞI ---
         function checkStatusExpiry() {
             const now = Date.now();
-            if (myStatus && now - myStatus.timestamp > ONE_DAY) { myStatus = null; }
-            for (let f in friendsStatuses) {
-                if (now - friendsStatuses[f].timestamp > ONE_DAY) { delete friendsStatuses[f]; }
+            if (myStatus && now - myStatus.timestamp > ONE_DAY) {
+                myStatus = null;
+            }
+            for (let f in friendsStatuses) { 
+                if (now - friendsStatuses[f].timestamp > ONE_DAY) {
+                    delete friendsStatuses[f]; 
+                }
             }
             localStorage.setItem('hrmsg_my_status', JSON.stringify(myStatus));
             localStorage.setItem('hrmsg_friends_statuses', JSON.stringify(friendsStatuses));
@@ -273,279 +356,471 @@
         }
 
         function renderStatusBar() {
-            // Kendi Durumumuz
-            if (myStatus) {
-                myStatusCircle.innerText = myUsername.charAt(0).toUpperCase();
-                myStatusCircle.classList.add('has-status');
-            } else {
-                myStatusCircle.innerText = '+';
-                myStatusCircle.classList.remove('has-status');
-            }
-
-            // Arkadaşları Temizle, Sadece Kendimi Bırak
-            statusBar.innerHTML = `
+            const statusBar = document.getElementById('status-bar');
+            
+            let myStatusHTML = `
                 <div class="status-item" id="btn-my-status">
-                    <div class="status-circle my-status ${myStatus ? 'has-status' : ''}">${myStatus ? myUsername.charAt(0).toUpperCase() : '+'}</div>
+                    <div class="status-circle my-status ${myStatus ? 'has-status' : ''}" id="my-status-circle">
+                        ${myStatus ? myUsername.charAt(0).toUpperCase() : '+'}
+                    </div>
                     <span>Sen</span>
                 </div>
             `;
             
+            statusBar.innerHTML = myStatusHTML;
+
+            // Kendi durumumuza tıklama
             document.getElementById('btn-my-status').addEventListener('click', () => {
-                if (myStatus) viewStatus(myUsername, myStatus);
-                else statusCreateModal.style.display = 'flex';
+                if (myStatus) {
+                    viewStatus(myUsername, myStatus);
+                } else {
+                    document.getElementById('status-create-modal').style.display = 'flex';
+                }
             });
 
-            // Arkadaş Durumlarını Çiz
+            // Arkadaş durumlarını listeye ekle
             for (let friend in friendsStatuses) {
-                const fStatus = friendsStatuses[friend];
-                const div = document.createElement('div');
+                const div = document.createElement('div'); 
                 div.className = 'status-item';
                 div.innerHTML = `
                     <div class="status-circle has-status">${friend.charAt(0).toUpperCase()}</div>
                     <span>@${friend}</span>
                 `;
-                div.onclick = () => viewStatus(friend, fStatus);
+                div.onclick = () => viewStatus(friend, friendsStatuses[friend]);
                 statusBar.appendChild(div);
             }
         }
 
         document.getElementById('btn-save-status').addEventListener('click', () => {
-            const text = document.getElementById('status-text-input').value.trim();
+            const text = document.getElementById('status-text-input').value.trim(); 
             if(!text) return;
+            
             myStatus = { text: text, timestamp: Date.now() };
             localStorage.setItem('hrmsg_my_status', JSON.stringify(myStatus));
-            document.getElementById('status-text-input').value = '';
-            statusCreateModal.style.display = 'none';
-            renderStatusBar();
-            backgroundSyncToAll(); // Yeni durum paylaşıldığında herkese görünmez ping at
-        });
-        document.getElementById('btn-cancel-status').addEventListener('click', () => statusCreateModal.style.display = 'none');
-
-        // Durum Görüntüleyici
-        function viewStatus(name, statusObj) {
-            statusViewerName.innerText = "@" + name;
-            statusContentText.innerText = statusObj.text;
-            statusViewer.style.display = 'flex';
             
-            statusProgressFill.style.width = '0%';
-            clearTimeout(statusTimer);
+            document.getElementById('status-text-input').value = ''; 
+            document.getElementById('status-create-modal').style.display = 'none';
+            
+            renderStatusBar(); 
+            backgroundSyncToAll(); 
+        });
 
-            // 5 Saniyelik animasyon ve otomatik kapanma
-            setTimeout(() => { statusProgressFill.style.width = '100%'; }, 50);
-            statusTimer = setTimeout(() => { closeStatusViewer(); }, 5000);
+        document.getElementById('btn-cancel-status').addEventListener('click', () => {
+            document.getElementById('status-create-modal').style.display = 'none';
+        });
+
+        function viewStatus(name, statusObj) {
+            document.getElementById('status-viewer-name').innerText = "@" + name;
+            document.getElementById('status-content-text').innerText = statusObj.text;
+            document.getElementById('status-viewer').style.display = 'flex';
+            document.getElementById('status-progress-fill').style.width = '0%';
+            
+            clearTimeout(statusTimer);
+            setTimeout(() => { 
+                document.getElementById('status-progress-fill').style.width = '100%'; 
+            }, 50);
+            statusTimer = setTimeout(closeStatusViewer, 5000);
         }
 
-        function closeStatusViewer() {
-            statusViewer.style.display = 'none';
-            statusProgressFill.style.width = '0%';
-            clearTimeout(statusTimer);
+        function closeStatusViewer() { 
+            document.getElementById('status-viewer').style.display = 'none'; 
+            document.getElementById('status-progress-fill').style.width = '0%'; 
+            clearTimeout(statusTimer); 
         }
+
         document.getElementById('btn-close-status-viewer').addEventListener('click', closeStatusViewer);
 
-        // --- ARKA PLAN SENKRONİZASYONU ---
-        // Kullanıcı giriş yaptığında veya yeni durum paylaştığında arkadaşlarına bağlanıp durum çeker
         function backgroundSyncToAll() {
             friends.forEach(f => {
                 if(f === myUsername) return;
                 const conn = peer.connect(PREFIX + f, { metadata: { type: 'bg-sync' } });
-                conn.on('open', () => {
-                    if (myStatus) conn.send({ type: 'status-sync', status: myStatus });
+                
+                conn.on('open', () => { 
+                    if (myStatus) conn.send({ type: 'status-sync', status: myStatus }); 
                 });
-                conn.on('data', data => {
-                    if (data.type === 'status-sync') {
-                        friendsStatuses[f] = data.status;
-                        checkStatusExpiry(); // Gelen veriyi kaydet ve render et
-                        conn.close(); // İş bitince arka plan bağlantısını kapat
-                    }
+                
+                conn.on('data', data => { 
+                    if (data.type === 'status-sync') { 
+                        friendsStatuses[f] = data.status; 
+                        checkStatusExpiry(); 
+                        conn.close(); 
+                    } 
                 });
             });
         }
 
-
-        // --- 1. OTURUM BAŞLATMA ---
+        // --- 1. OTURUM ---
         window.onload = () => {
-            setInterval(checkStatusExpiry, 60000); // Dakikada bir durumların süresini kontrol et
-            
+            setInterval(checkStatusExpiry, 60000); 
             const savedLocalUser = localStorage.getItem('hrmsg_user');
-            if (savedLocalUser) initUser(savedLocalUser); 
-            else if (sessionStorage.getItem('hrmsg_user')) initUser(sessionStorage.getItem('hrmsg_user')); 
+            
+            if (savedLocalUser) {
+                initUser(savedLocalUser); 
+            } else if (sessionStorage.getItem('hrmsg_user')) {
+                initUser(sessionStorage.getItem('hrmsg_user')); 
+            }
         };
 
         document.getElementById('login-btn').addEventListener('click', () => {
-            const rawName = usernameInput.value.trim().toLowerCase().replace(/\s+/g, '');
-            if (rawName.length < 3) return;
-            if (document.getElementById('remember-me').checked) localStorage.setItem('hrmsg_user', rawName);
-            else sessionStorage.setItem('hrmsg_user', rawName);
+            const rawName = document.getElementById('my-username-input').value.trim().toLowerCase().replace(/\s+/g, '');
+            
+            if (rawName.length < 3) {
+                alert("Kullanıcı adı en az 3 karakter olmalıdır!");
+                return;
+            }
+            
+            if (document.getElementById('remember-me').checked) {
+                localStorage.setItem('hrmsg_user', rawName); 
+            } else {
+                sessionStorage.setItem('hrmsg_user', rawName);
+            }
+            
             initUser(rawName);
         });
 
-        // --- 2. PEERJS BAŞLATMA ---
+        // --- 2. PEERJS ---
         function initUser(username) {
-            myUsername = username;
+            myUsername = username; 
             document.getElementById('my-username-display').innerText = "@" + myUsername;
             peer = new Peer(PREFIX + myUsername);
 
-            peer.on('open', (id) => {
-                loginScreen.style.display = 'none'; appScreen.style.display = 'flex';
+            peer.on('open', () => {
+                loginScreen.style.display = 'none'; 
+                appScreen.style.display = 'flex';
                 networkStatus.innerHTML = "Ağa Katıldın <span style='color:#10b981'>● Online</span>";
                 
-                checkStatusExpiry();
-                renderFriends();
-                setTimeout(backgroundSyncToAll, 2000); // Ağa bağlandıktan 2 saniye sonra arka plan sekronizasyonu yap
+                checkStatusExpiry(); 
+                renderFriends(); 
+                setTimeout(backgroundSyncToAll, 2000); 
             });
 
             peer.on('connection', (conn) => {
-                // Eğer bağlantı sadece arka plan durum sekronizasyonu içindeyse aktif sohbeti bölme
                 if (conn.metadata && conn.metadata.type === 'bg-sync') {
-                    conn.on('open', () => { if (myStatus) conn.send({ type: 'status-sync', status: myStatus }); });
-                    conn.on('data', data => {
-                        if (data.type === 'status-sync') {
-                            const friendName = conn.peer.replace(PREFIX, '');
-                            friendsStatuses[friendName] = data.status;
-                            checkStatusExpiry();
-                        }
+                    conn.on('open', () => { 
+                        if (myStatus) conn.send({ type: 'status-sync', status: myStatus }); 
                     });
-                    return; // Normal sohbet kodlarına geçme
+                    conn.on('data', data => { 
+                        if (data.type === 'status-sync') { 
+                            friendsStatuses[conn.peer.replace(PREFIX, '')] = data.status; 
+                            checkStatusExpiry(); 
+                        } 
+                    });
+                    return; 
                 }
-                
-                // Normal Sohbet Bağlantısı
-                currentConnection = conn;
+                currentConnection = conn; 
                 setupConnectionEvents(conn);
             });
 
             peer.on('call', (call) => {
-                pendingCall = call;
+                pendingCall = call; 
                 const isVideo = call.metadata && call.metadata.type === 'video';
                 document.getElementById('caller-name').innerText = call.peer.replace(PREFIX, '@') + (isVideo ? " görüntülü arıyor..." : " sesli arıyor...");
-                document.getElementById('call-modal').style.display = 'block';
+                callModal.style.display = 'block'; 
+                playNotification(true);
+            });
+            
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    alert("Bu hesap şu an başka sekmede açık!");
+                    localStorage.removeItem('hrmsg_user');
+                    location.reload();
+                }
             });
         }
 
-        // --- 3. ARKADAŞ SİSTEMİ ---
+        // --- 3. ARKADAŞLAR ---
         document.getElementById('add-friend-btn').addEventListener('click', () => {
             const fName = document.getElementById('new-friend-input').value.trim().toLowerCase().replace(/\s+/g, '');
             if (fName.length > 0 && fName !== myUsername && !friends.includes(fName)) { 
-                friends.push(fName); localStorage.setItem('hrmsg_friends', JSON.stringify(friends)); renderFriends(); 
-                backgroundSyncToAll(); // Yeni arkadaş eklenince hemen durumunu çekmeye çalış
+                friends.push(fName); 
+                localStorage.setItem('hrmsg_friends', JSON.stringify(friends)); 
+                renderFriends(); 
+                backgroundSyncToAll();
             }
             document.getElementById('new-friend-input').value = '';
         });
 
         function renderFriends() {
-            const list = document.getElementById('friends-list'); list.innerHTML = '';
+            const list = document.getElementById('friends-list'); 
+            list.innerHTML = '';
+            
             friends.forEach(f => {
-                const li = document.createElement('li'); li.className = 'friend-item';
-                li.innerHTML = `<div class="friend-name" onclick="connectToUser('${f}')">@${f}</div><button class="btn-delete" onclick="deleteFriend('${f}', event)">✖</button>`;
+                const li = document.createElement('li'); 
+                li.className = 'friend-item';
+                li.innerHTML = `
+                    <div class="friend-name" onclick="connectToUser('${f}')">@${f}</div>
+                    <button class="btn-delete" onclick="deleteFriend('${f}', event)">✖</button>
+                `;
                 list.appendChild(li);
             });
         }
-        function deleteFriend(f, e) {
-            e.stopPropagation();
-            if(confirm("Silinecek?")) { friends = friends.filter(x => x !== f); localStorage.setItem('hrmsg_friends', JSON.stringify(friends)); renderFriends(); }
+
+        function deleteFriend(f, e) { 
+            e.stopPropagation(); 
+            if(confirm("Kişiyi silmek istiyor musunuz?")) { 
+                friends = friends.filter(x => x !== f); 
+                localStorage.setItem('hrmsg_friends', JSON.stringify(friends)); 
+                renderFriends(); 
+            } 
         }
 
         // --- 4. SOHBET BAĞLANTISI ---
-        window.connectToUser = function(targetRaw) {
-            const conn = peer.connect(PREFIX + targetRaw);
-            currentConnection = conn;
-            setupConnectionEvents(conn);
+        window.connectToUser = function(targetRaw) { 
+            currentConnection = peer.connect(PREFIX + targetRaw); 
+            setupConnectionEvents(currentConnection); 
         };
 
         function setupConnectionEvents(conn) {
             conn.on('open', () => {
-                const targetName = conn.peer.replace(PREFIX, '');
-                chatTitle.innerText = "@" + targetName;
+                chatTitle.innerText = "@" + conn.peer.replace(PREFIX, '');
                 document.getElementById('connection-status').style.display = 'block';
                 
-                // Bağlantı kurulduğunda durumları karşılıklı fırlat
                 if (myStatus) conn.send({ type: 'status-sync', status: myStatus });
 
-                document.getElementById('message-input').disabled = false; document.getElementById('send-btn').disabled = false;
-                document.getElementById('ping-btn').disabled = false; document.getElementById('mic-btn').disabled = false;
-                document.getElementById('btn-start-call').style.display = 'inline-block'; 
-                document.getElementById('btn-start-video').style.display = 'inline-block'; 
+                messageInput.disabled = false; 
+                messageInput.placeholder = "Mesaj yazın...";
+                document.getElementById('send-btn').disabled = false; 
+                document.getElementById('ping-btn').disabled = false; 
+                micBtn.disabled = false;
+                btnStartCall.style.display = 'inline-block'; 
+                btnStartVideo.style.display = 'inline-block'; 
                 
-                chatBox.innerHTML = '';
+                chatBox.innerHTML = ''; 
                 if(window.innerWidth <= 768) { sidebar.classList.add('hidden'); }
             });
 
             conn.on('data', (data) => {
-                if (data.type === 'message') {
-                    appendMessage(data.text, 'received', '');
-                    conn.send({ type: 'read-receipt', id: data.msgId });
+                if (data.type === 'message') { 
+                    appendMessage(data.text, 'received', ''); 
+                    conn.send({ type: 'read-receipt', id: data.msgId }); 
+                    playNotification(); 
                 } 
-                else if (data.type === 'voice') {
-                    const audioBlob = new Blob([data.audio], { type: 'audio/webm' });
-                    appendVoiceMessage(audioBlob, 'received', '');
-                    conn.send({ type: 'read-receipt', id: data.msgId });
+                else if (data.type === 'voice') { 
+                    appendVoiceMessage(new Blob([data.audio], { type: 'audio/webm' }), 'received', ''); 
+                    conn.send({ type: 'read-receipt', id: data.msgId }); 
+                    playNotification(); 
                 }
-                else if (data.type === 'status-sync') {
-                    const friendName = conn.peer.replace(PREFIX, '');
-                    friendsStatuses[friendName] = data.status;
-                    checkStatusExpiry();
+                else if (data.type === 'status-sync') { 
+                    friendsStatuses[conn.peer.replace(PREFIX, '')] = data.status; 
+                    checkStatusExpiry(); 
                 }
-                else if (data.type === 'ping') triggerPing(); 
-                else if (data.type === 'read-receipt') {
-                    const span = document.getElementById('status-' + data.id);
-                    if (span) { span.innerText = 'R'; span.className = 'status-r'; }
+                else if (data.type === 'ping') { 
+                    triggerPing(); 
+                    playNotification(true); 
+                }
+                else if (data.type === 'call-rejected' || data.type === 'call-ended') { 
+                    endCall(); 
+                }
+                else if (data.type === 'read-receipt') { 
+                    const span = document.getElementById('status-' + data.id); 
+                    if (span) { span.innerText = 'R'; span.className = 'status-r'; } 
                 }
             });
 
             conn.on('close', disableChat);
         }
 
-        // --- MESAJ YAZMA & SES KAYDI ---
+        // --- 5. MESAJ / SES KAYDI / ARAMALAR ---
         document.getElementById('chat-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const text = document.getElementById('message-input').value.trim();
-            if (text === '' || !currentConnection || !currentConnection.open) return;
-            const msgId = Date.now().toString();
+            e.preventDefault(); 
+            const text = messageInput.value.trim(); 
+            if (!text || !currentConnection || !currentConnection.open) return;
+            
+            const msgId = Date.now().toString(); 
             currentConnection.send({ type: 'message', text: text, msgId: msgId });
-            appendMessage(text, 'sent', msgId); document.getElementById('message-input').value = '';
+            appendMessage(text, 'sent', msgId); 
+            messageInput.value = '';
         });
 
-        document.getElementById('ping-btn').addEventListener('click', () => {
-            if (currentConnection && currentConnection.open) { currentConnection.send({ type: 'ping' }); triggerPing(true); }
+        document.getElementById('ping-btn').addEventListener('click', () => { 
+            if (currentConnection && currentConnection.open) { 
+                currentConnection.send({ type: 'ping' }); 
+                triggerPing(true); 
+            } 
         });
 
-        // --- GÖRSELLER ---
-        function appendMessage(text, type, msgId) {
-            const msgDiv = document.createElement('div'); msgDiv.className = `message ${type}`;
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            let statusHtml = type === 'sent' ? `<span id="status-${msgId}" class="status-d">D</span>` : '';
-            msgDiv.innerHTML = `<div>${text}</div><span class="msg-time">${time} ${statusHtml}</span>`;
-            chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
+        micBtn.addEventListener('click', async () => {
+            if (!currentConnection || !currentConnection.open || currentCall) return;
+            
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); 
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                    
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); 
+                        audioChunks = [];
+                        const msgId = Date.now().toString(); 
+                        
+                        currentConnection.send({ type: 'voice', audio: audioBlob, msgId: msgId });
+                        appendVoiceMessage(audioBlob, 'sent', msgId); 
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    mediaRecorder.start(); 
+                    isRecording = true; 
+                    micBtn.classList.add('recording'); 
+                    messageInput.disabled = true; 
+                    messageInput.placeholder = "🔴 Kaydediliyor...";
+                } catch (err) { 
+                    alert("Mikrofon izni alınamadı."); 
+                }
+            } else { 
+                mediaRecorder.stop(); 
+                isRecording = false; 
+                micBtn.classList.remove('recording'); 
+                messageInput.disabled = false; 
+                messageInput.placeholder = "Mesaj yazın..."; 
+            }
+        });
+
+        // Arama Başlat/Yanıtla/Bitir
+        btnStartCall.addEventListener('click', () => startCall(false)); 
+        btnStartVideo.addEventListener('click', () => startCall(true));
+        
+        async function startCall(isVideo) {
+            if (!currentConnection || !currentConnection.open) return;
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
+                
+                if(isVideo) { 
+                    localVideo.srcObject = localStream; 
+                    videoOverlay.style.display = 'flex'; 
+                }
+                
+                currentCall = peer.call(currentConnection.peer, localStream, { metadata: { type: isVideo ? 'video' : 'audio' } });
+                setupCallEvents(currentCall, isVideo); 
+                uiCallActive();
+            } catch (err) { 
+                alert("Kamera veya Mikrofon izni yok."); 
+            }
         }
 
-        function appendVoiceMessage(blob, type, msgId) {
-            const msgDiv = document.createElement('div'); msgDiv.className = `message ${type}`;
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            let statusHtml = type === 'sent' ? `<span id="status-${msgId}" class="status-d">D</span>` : '';
-            msgDiv.innerHTML = `<div><audio controls src="${URL.createObjectURL(blob)}"></audio></div><span class="msg-time">${time} ${statusHtml}</span>`;
-            chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
+        btnAcceptCall.addEventListener('click', async () => {
+            callModal.style.display = 'none'; 
+            if(!pendingCall) return;
+            
+            const isVideo = pendingCall.metadata && pendingCall.metadata.type === 'video';
+            
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
+                
+                if(isVideo) { 
+                    localVideo.srcObject = localStream; 
+                    videoOverlay.style.display = 'flex'; 
+                }
+                
+                pendingCall.answer(localStream); 
+                currentCall = pendingCall; 
+                setupCallEvents(currentCall, isVideo); 
+                uiCallActive();
+            } catch (err) { 
+                btnRejectCall.click(); 
+            }
+        });
+
+        btnRejectCall.addEventListener('click', () => { 
+            callModal.style.display = 'none'; 
+            if (pendingCall) { pendingCall.close(); pendingCall = null; } 
+            if (currentConnection) currentConnection.send({ type: 'call-rejected' }); 
+        });
+        
+        btnEndCall.addEventListener('click', () => { 
+            if (currentConnection) currentConnection.send({ type: 'call-ended' }); 
+            endCall(); 
+        });
+
+        function setupCallEvents(call, isVideo) { 
+            call.on('stream', (rStream) => { 
+                if(isVideo) remoteVideo.srcObject = rStream; 
+                else remoteLiveAudio.srcObject = rStream; 
+            }); 
+            call.on('close', endCall); 
+            call.on('error', endCall); 
+        }
+        
+        function endCall() {
+            if (currentCall) { currentCall.close(); currentCall = null; } 
+            if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+            remoteLiveAudio.srcObject = null; 
+            remoteVideo.srcObject = null; 
+            localVideo.srcObject = null; 
+            videoOverlay.style.display = 'none'; 
+            pendingCall = null; 
+            uiCallInactive();
+        }
+        
+        function uiCallActive() { 
+            btnStartCall.style.display = 'none'; 
+            btnStartVideo.style.display = 'none'; 
+            btnEndCall.style.display = 'inline-block'; 
+        }
+        
+        function uiCallInactive() { 
+            if(currentConnection && currentConnection.open) { 
+                btnStartCall.style.display = 'inline-block'; 
+                btnStartVideo.style.display = 'inline-block'; 
+            } else { 
+                btnStartCall.style.display = 'none'; 
+                btnStartVideo.style.display = 'none'; 
+            } 
+            btnEndCall.style.display = 'none'; 
+            callModal.style.display = 'none'; 
         }
 
-        function triggerPing(isSender = false) {
-            const msgDiv = document.createElement('div'); msgDiv.className = 'message ping';
-            msgDiv.innerText = isSender ? 'PING GÖNDERİLDİ!' : '!!! PING !!!';
-            chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
+        // --- GÖRSELLER VE SIFIRLAMA ---
+        function appendMessage(text, type, msgId) { 
+            const div = document.createElement('div'); 
+            div.className = `message ${type}`; 
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
+            div.innerHTML = `<div>${text}</div><span class="msg-time">${time} ${type === 'sent' ? `<span id="status-${msgId}" class="status-d">D</span>` : ''}</span>`; 
+            chatBox.appendChild(div); 
+            chatBox.scrollTop = chatBox.scrollHeight; 
+        }
+        
+        function appendVoiceMessage(blob, type, msgId) { 
+            const div = document.createElement('div'); 
+            div.className = `message ${type}`; 
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
+            div.innerHTML = `<div><audio controls src="${URL.createObjectURL(blob)}"></audio></div><span class="msg-time">${time} ${type === 'sent' ? `<span id="status-${msgId}" class="status-d">D</span>` : ''}</span>`; 
+            chatBox.appendChild(div); 
+            chatBox.scrollTop = chatBox.scrollHeight; 
+        }
+        
+        function triggerPing(isSender = false) { 
+            const div = document.createElement('div'); 
+            div.className = 'message ping'; 
+            div.innerText = isSender ? 'PING GÖNDERİLDİ!' : '!!! PING !!!'; 
+            chatBox.appendChild(div); 
+            chatBox.scrollTop = chatBox.scrollHeight; 
+            document.body.classList.add('shake-animation'); 
+            setTimeout(() => document.body.classList.remove('shake-animation'), 400); 
         }
 
         function disableChat() {
-            chatTitle.innerText = "Bir Kişi Seçin";
+            chatTitle.innerText = "Bir Kişi Seçin"; 
             document.getElementById('connection-status').style.display = 'none';
-            document.getElementById('message-input').disabled = true; document.getElementById('send-btn').disabled = true;
-            document.getElementById('ping-btn').disabled = true; document.getElementById('mic-btn').disabled = true;
+            messageInput.disabled = true; 
+            messageInput.placeholder = "Sohbet başlatmak için birini seçin...";
+            document.getElementById('send-btn').disabled = true; 
+            document.getElementById('ping-btn').disabled = true; 
+            micBtn.disabled = true;
+            btnStartCall.style.display = 'none'; 
+            btnStartVideo.style.display = 'none'; 
+            btnEndCall.style.display = 'none';
         }
 
-        document.getElementById('back-btn').addEventListener('click', () => { sidebar.classList.remove('hidden'); });
+        document.getElementById('back-btn').addEventListener('click', () => { 
+            sidebar.classList.remove('hidden'); 
+        });
         
-        // Çıkış yap
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            if(confirm("Çıkış yap?")) {
-                localStorage.removeItem('hrmsg_user'); sessionStorage.removeItem('hrmsg_user');
+        document.getElementById('logout-btn').addEventListener('click', () => { 
+            if(confirm("Çıkış yapmak istediğinize emin misiniz?")) { 
+                localStorage.removeItem('hrmsg_user'); 
+                sessionStorage.removeItem('hrmsg_user'); 
                 location.reload(); 
-            }
+            } 
         });
     </script>
 </body>
