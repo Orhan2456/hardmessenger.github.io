@@ -29,13 +29,12 @@
         /* ANA UYGULAMA DÜZENİ */
         .messenger-app { display: none; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto; background: #0f0f0f; position: relative; }
 
-        /* SOL MENÜ (Bağlantı ve Arkadaşlar) */
+        /* SOL MENÜ */
         .sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #333; display: flex; flex-direction: column; height: 100%; }
         .profile-section { background: linear-gradient(135deg, #1f2937, #111827); padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
         .profile-info h2 { font-size: 11px; color: #9ca3af; text-transform: uppercase; margin-bottom: 5px; }
         .username-display { font-size: 20px; font-weight: bold; color: #10b981; }
         .btn-logout { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
-        .btn-logout:hover { background: #dc2626; }
 
         .friends-section { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
         .add-friend-box { padding: 15px; border-bottom: 1px solid #333; display: flex; gap: 8px; }
@@ -54,17 +53,24 @@
         /* SAĞ MENÜ (Sohbet Ekranı) */
         .chat-area { flex: 1; display: flex; flex-direction: column; background: #0f0f0f; height: 100%; position: relative; }
         .chat-header { background: #1e1e1e; padding: 15px 20px; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
-        .chat-header-info h3 { font-size: 16px; margin-bottom: 2px; }
-        .chat-header-info span { font-size: 12px; color: #10b981; }
+        .chat-header-info { display: flex; align-items: center; flex: 1; }
+        .chat-title-wrapper { flex: 1; }
+        .chat-title-wrapper h3 { font-size: 16px; margin-bottom: 2px; }
+        .chat-title-wrapper span { font-size: 12px; color: #10b981; }
         .btn-back { display: none; background: transparent; color: #3b82f6; border: none; font-size: 16px; font-weight: bold; cursor: pointer; padding-right: 15px; }
 
+        /* Arama Butonları */
+        .header-actions { display: flex; gap: 10px; }
+        .btn-header-call { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; display: none; }
+        .btn-header-call:hover { background: #059669; }
+        .btn-header-end { background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; display: none; }
+        
         .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         .message { max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
         .message.sent { background: #2563eb; align-self: flex-end; border-bottom-right-radius: 2px; }
         .message.received { background: #2d2d30; align-self: flex-start; border-bottom-left-radius: 2px; }
         .message.ping { background: transparent; color: #ef4444; font-weight: bold; font-size: 18px; align-self: center; border: 2px dashed #ef4444; padding: 8px 15px; }
         
-        /* SES OYNATICI TASARIMI */
         audio { height: 35px; max-width: 200px; outline: none; border-radius: 20px; }
         audio::-webkit-media-controls-panel { background-color: #f1f5f9; }
 
@@ -80,9 +86,16 @@
         .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-ping { background: #ef4444; font-size: 12px; }
         .btn-mic { background: #10b981; font-size: 18px; }
-        
-        /* Kayıt animasyonu */
         .btn-mic.recording { background: #ef4444; animation: pulse 1s infinite; }
+
+        /* Gelen Arama Modalı */
+        .call-modal { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #1e1e1e; border: 2px solid #3b82f6; padding: 20px; border-radius: 12px; z-index: 1000; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; }
+        .call-modal h4 { margin-bottom: 15px; font-size: 16px; color: white; }
+        .call-modal-btns { display: flex; gap: 15px; justify-content: center; }
+        .call-modal-btns button { padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; color: white; }
+        .btn-accept { background: #10b981; }
+        .btn-reject { background: #ef4444; }
+
         @keyframes pulse {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
             70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
@@ -96,8 +109,6 @@
             .sidebar.hidden { transform: translateX(-100%); }
             .btn-back { display: block; }
         }
-
-        /* Titreme Efekti */
         @keyframes shake {
             0%, 100% { transform: translate(0, 0); }
             20% { transform: translate(-3px, 2px); }
@@ -138,9 +149,7 @@
                     <input type="text" id="new-friend-input" placeholder="Arkadaşının Adı" autocomplete="off">
                     <button id="add-friend-btn">Ekle</button>
                 </div>
-                
-                <ul class="friends-list" id="friends-list">
-                    </ul>
+                <ul class="friends-list" id="friends-list"></ul>
             </div>
 
             <div class="status-box" id="network-status">
@@ -149,23 +158,39 @@
         </aside>
 
         <main class="chat-area" id="chat-area">
+            
+            <div class="call-modal" id="call-modal">
+                <h4 id="caller-name">Birisi arıyor...</h4>
+                <div class="call-modal-btns">
+                    <button class="btn-accept" id="btn-accept-call">📞 Yanıtla</button>
+                    <button class="btn-reject" id="btn-reject-call">✖ Reddet</button>
+                </div>
+            </div>
+
             <header class="chat-header">
-                <button class="btn-back" id="back-btn">❮ Geri</button>
+                <button class="btn-back" id="back-btn">❮</button>
                 <div class="chat-header-info">
-                    <h3 id="chat-title">Bir Kişi Seçin</h3>
-                    <span id="connection-status" style="display:none;">Güvenli Bağlantı Kuruldu</span>
+                    <div class="chat-title-wrapper">
+                        <h3 id="chat-title">Bir Kişi Seçin</h3>
+                        <span id="connection-status" style="display:none;">Güvenli Bağlantı Kuruldu</span>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-header-call" id="btn-start-call" title="Sesli Ara">📞 Ara</button>
+                        <button class="btn-header-end" id="btn-end-call" title="Aramayı Kapat">🛑 Kapat</button>
+                    </div>
                 </div>
             </header>
             
-            <div class="chat-box" id="chat-box">
-                </div>
+            <div class="chat-box" id="chat-box"></div>
 
             <form class="chat-input-area" id="chat-form">
                 <button type="button" class="btn-action btn-ping" id="ping-btn" disabled title="Dikkat Çek!">PING!</button>
-                <button type="button" class="btn-action btn-mic" id="mic-btn" disabled title="Ses Kaydet">🎤</button>
+                <button type="button" class="btn-action btn-mic" id="mic-btn" disabled title="Sesli Mesaj Kaydet">🎤</button>
                 <input type="text" id="message-input" placeholder="Mesaj yazın..." autocomplete="off" disabled>
                 <button type="submit" class="btn-action" id="send-btn" disabled title="Gönder">➤</button>
             </form>
+
+            <audio id="remote-live-audio" autoplay style="display:none;"></audio>
         </main>
     </div>
 
@@ -177,10 +202,15 @@
         let myUsername = "";
         let friends = JSON.parse(localStorage.getItem('hrmsg_friends')) || [];
 
-        // Ses Kaydı Değişkenleri
+        // Sesli Mesaj Değişkenleri
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
+
+        // Canlı Arama (Call) Değişkenleri
+        let currentCall = null;
+        let localStream = null;
+        let pendingCall = null;
 
         // --- DOM ELEMENTLERİ ---
         const loginScreen = document.getElementById('login-screen');
@@ -194,8 +224,17 @@
         const chatTitle = document.getElementById('chat-title');
         const friendsListEl = document.getElementById('friends-list');
         const micBtn = document.getElementById('mic-btn');
+        
+        // Arama Elementleri
+        const btnStartCall = document.getElementById('btn-start-call');
+        const btnEndCall = document.getElementById('btn-end-call');
+        const callModal = document.getElementById('call-modal');
+        const callerNameDisplay = document.getElementById('caller-name');
+        const btnAcceptCall = document.getElementById('btn-accept-call');
+        const btnRejectCall = document.getElementById('btn-reject-call');
+        const remoteLiveAudio = document.getElementById('remote-live-audio');
 
-        // --- BİLDİRİM SİSTEMLERİ (SES, TİTREŞİM, SEKME) ---
+        // --- BİLDİRİM SİSTEMLERİ ---
         let originalTitle = document.title;
         let blinkInterval;
         let isWindowFocused = true;
@@ -205,17 +244,14 @@
             clearInterval(blinkInterval);
             document.title = originalTitle;
         });
-
-        window.addEventListener('blur', () => {
-            isWindowFocused = false;
-        });
+        window.addEventListener('blur', () => { isWindowFocused = false; });
 
         function notifyTab() {
             if (!isWindowFocused) {
                 clearInterval(blinkInterval);
                 let showNew = true;
                 blinkInterval = setInterval(() => {
-                    document.title = showNew ? "💬 Yeni Mesaj!" : originalTitle;
+                    document.title = showNew ? "💬 Yeni Bildirim!" : originalTitle;
                     showNew = !showNew;
                 }, 1000);
             }
@@ -223,21 +259,15 @@
 
         function playNotification(isPing = false) {
             if ("vibrate" in navigator) {
-                if (isPing) {
-                    navigator.vibrate([300, 100, 300, 100, 300]); 
-                } else {
-                    navigator.vibrate([150, 50, 150]); 
-                }
+                if (isPing) navigator.vibrate([300, 100, 300, 100, 300]); 
+                else navigator.vibrate([150, 50, 150]); 
             }
-
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const ctx = new AudioContext();
                 const osc = ctx.createOscillator();
                 const gainNode = ctx.createGain();
-                
                 osc.type = isPing ? 'sawtooth' : 'sine'; 
-                
                 if (isPing) {
                     osc.frequency.setValueAtTime(800, ctx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.3);
@@ -245,82 +275,53 @@
                     osc.frequency.setValueAtTime(440, ctx.currentTime); 
                     osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1); 
                 }
-                
                 gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                
                 osc.connect(gainNode);
                 gainNode.connect(ctx.destination);
-                
                 osc.start();
                 osc.stop(ctx.currentTime + 0.4);
-            } catch (e) {
-                console.warn("Tarayıcı ses çalmayı engelledi.", e);
-            }
-
+            } catch (e) { console.warn("Ses çalınamadı.", e); }
             notifyTab();
         }
 
-        // --- 1. OTURUM KONTROLÜ (AÇILIŞTA) ---
+        // --- 1. OTURUM BAŞLATMA ---
         window.onload = () => {
             const savedLocalUser = localStorage.getItem('hrmsg_user');
             const savedSessionUser = sessionStorage.getItem('hrmsg_user');
-            
-            if (savedLocalUser) {
-                initUser(savedLocalUser); 
-            } else if (savedSessionUser) {
-                initUser(savedSessionUser); 
-            }
+            if (savedLocalUser) initUser(savedLocalUser); 
+            else if (savedSessionUser) initUser(savedSessionUser); 
             renderFriends(); 
         };
 
-        // --- 2. GİRİŞ YAPMA VE ÇIKIŞ YAPMA ---
         document.getElementById('login-btn').addEventListener('click', () => {
             const rawName = usernameInput.value.trim();
-            if (rawName.length < 3) {
-                alert("Kullanıcı adı en az 3 karakter olmalıdır!"); return;
-            }
-            
+            if (rawName.length < 3) { alert("En az 3 karakter!"); return; }
             const cleanName = rawName.toLowerCase().replace(/\s+/g, '');
-            
-            if (rememberMeCheck.checked) {
-                localStorage.setItem('hrmsg_user', cleanName);
-            } else {
-                sessionStorage.setItem('hrmsg_user', cleanName);
-            }
-
+            if (rememberMeCheck.checked) localStorage.setItem('hrmsg_user', cleanName);
+            else sessionStorage.setItem('hrmsg_user', cleanName);
             initUser(cleanName);
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
             if(confirm("Çıkış yapmak istediğinize emin misiniz?")) {
-                localStorage.removeItem('hrmsg_user');
-                sessionStorage.removeItem('hrmsg_user');
-                
+                localStorage.removeItem('hrmsg_user'); sessionStorage.removeItem('hrmsg_user');
+                if(currentCall) endCall();
                 if (currentConnection) currentConnection.close();
                 if (peer) peer.destroy();
-                
-                appScreen.style.display = 'none';
-                loginScreen.style.display = 'flex';
-                loginScreen.style.opacity = '1';
-                usernameInput.value = '';
-                disableChat();
+                location.reload(); // Temiz sayfa
             }
         });
 
-        // --- 3. KULLANICI BAŞLATMA (PEERJS) ---
+        // --- 2. PEERJS BAŞLATMA VE ARAMA (CALL) DİNLEYİCİSİ ---
         function initUser(username) {
             myUsername = username;
             document.getElementById('my-username-display').innerText = "@" + myUsername;
-
             peer = new Peer(PREFIX + myUsername);
 
             peer.on('open', (id) => {
                 loginScreen.style.opacity = '0';
-                setTimeout(() => {
-                    loginScreen.style.display = 'none';
-                    appScreen.style.display = 'flex';
-                }, 300);
+                setTimeout(() => { loginScreen.style.display = 'none'; appScreen.style.display = 'flex'; }, 300);
                 networkStatus.innerHTML = "Ağa Katıldın <span style='color:#10b981'>● Online</span>";
             });
 
@@ -329,42 +330,36 @@
                 setupConnectionEvents(conn);
             });
 
+            // Gelen Canlı Sesli Aramayı Dinle
+            peer.on('call', (call) => {
+                pendingCall = call;
+                callerNameDisplay.innerText = call.peer.replace(PREFIX, '@') + " arıyor...";
+                callModal.style.display = 'block';
+                playNotification(true); // Dikkat çekici ses
+            });
+
             peer.on('error', (err) => {
                 if (err.type === 'unavailable-id') {
-                    alert("Bu hesap şu an başka bir sekmede/cihazda açık!");
-                    localStorage.removeItem('hrmsg_user');
-                    sessionStorage.removeItem('hrmsg_user');
-                    location.reload();
-                } else {
-                    console.error("Ağ Hatası:", err);
+                    alert("Hesap başka sekmede açık!"); localStorage.removeItem('hrmsg_user'); location.reload();
                 }
             });
         }
 
-        // --- 4. ARKADAŞ SİSTEMİ ---
+        // --- 3. ARKADAŞ LİSTESİ YÖNETİMİ ---
         document.getElementById('add-friend-btn').addEventListener('click', () => {
             const friendName = document.getElementById('new-friend-input').value.trim().toLowerCase().replace(/\s+/g, '');
             if (friendName === myUsername) { alert("Kendinizi ekleyemezsiniz!"); return; }
             if (friendName.length === 0) return;
-            
-            if (!friends.includes(friendName)) {
-                friends.push(friendName);
-                saveFriends();
-                renderFriends();
-            }
+            if (!friends.includes(friendName)) { friends.push(friendName); saveFriends(); renderFriends(); }
             document.getElementById('new-friend-input').value = '';
         });
 
-        function saveFriends() {
-            localStorage.setItem('hrmsg_friends', JSON.stringify(friends));
-        }
-
+        function saveFriends() { localStorage.setItem('hrmsg_friends', JSON.stringify(friends)); }
         function renderFriends() {
             friendsListEl.innerHTML = '';
             friends.forEach(friend => {
                 const li = document.createElement('li');
                 li.className = 'friend-item';
-                
                 li.innerHTML = `
                     <div class="friend-name" onclick="connectToUser('${friend}')">@${friend}</div>
                     <button class="btn-delete" onclick="deleteFriend('${friend}', event)">✖</button>
@@ -372,17 +367,12 @@
                 friendsListEl.appendChild(li);
             });
         }
-
         function deleteFriend(friendName, event) {
             event.stopPropagation();
-            if(confirm(`@${friendName} kişisini silmek istiyor musunuz?`)) {
-                friends = friends.filter(f => f !== friendName);
-                saveFriends();
-                renderFriends();
-            }
+            if(confirm(`@${friendName} silinecek?`)) { friends = friends.filter(f => f !== friendName); saveFriends(); renderFriends(); }
         }
 
-        // --- 5. AĞA BAĞLANMA İŞLEMİ ---
+        // --- 4. VERİ BAĞLANTISI (CHAT) ---
         window.connectToUser = function(targetRaw) {
             networkStatus.innerHTML = `Aranıyor: @${targetRaw}...`;
             const conn = peer.connect(PREFIX + targetRaw);
@@ -390,7 +380,6 @@
             setupConnectionEvents(conn);
         };
 
-        // --- 6. BAĞLANTI YÖNETİMİ VE BİLDİRİMLER ---
         function setupConnectionEvents(conn) {
             conn.on('open', () => {
                 const targetName = conn.peer.replace(PREFIX, '');
@@ -399,14 +388,12 @@
                 networkStatus.innerHTML = `Bağlı <span style='color:#3b82f6'>⇄ @${targetName}</span>`;
                 
                 // Elementleri aktif et
-                messageInput.disabled = false;
-                document.getElementById('send-btn').disabled = false;
-                document.getElementById('ping-btn').disabled = false;
-                micBtn.disabled = false;
+                messageInput.disabled = false; document.getElementById('send-btn').disabled = false;
+                document.getElementById('ping-btn').disabled = false; micBtn.disabled = false;
+                btnStartCall.style.display = 'inline-block'; // Arama butonunu göster
                 
                 chatBox.innerHTML = '';
-                appendSystemMessage("Bağlantı kuruldu. Artık güvenle mesajlaşabilirsiniz.");
-                
+                appendSystemMessage("Bağlantı kuruldu. Metin, sesli mesaj veya canlı arama yapabilirsiniz.");
                 if(window.innerWidth <= 768) { sidebar.classList.add('hidden'); }
             });
 
@@ -417,142 +404,187 @@
                     playNotification(false);
                 } 
                 else if (data.type === 'voice') {
-                    // Gelen ses dosyasını Blob'a dönüştür ve ekrana yazdır
                     const audioBlob = new Blob([data.audio], { type: 'audio/webm' });
                     appendVoiceMessage(audioBlob, 'received', '');
                     conn.send({ type: 'read-receipt', id: data.msgId });
                     playNotification(false);
                 }
-                else if (data.type === 'ping') { 
-                    triggerPing(); 
-                    playNotification(true);
-                }
+                else if (data.type === 'ping') { triggerPing(); playNotification(true); }
                 else if (data.type === 'read-receipt') {
                     const statusSpan = document.getElementById('status-' + data.id);
-                    if (statusSpan) {
-                        statusSpan.innerText = 'R';
-                        statusSpan.className = 'status-r';
-                    }
+                    if (statusSpan) { statusSpan.innerText = 'R'; statusSpan.className = 'status-r'; }
+                }
+                // Karşı taraf aramayı reddettiğinde veya kapattığında
+                else if (data.type === 'call-rejected') {
+                    appendSystemMessage("Karşı taraf aramayı reddetti.");
+                    endCall();
+                }
+                else if (data.type === 'call-ended') {
+                    appendSystemMessage("Karşı taraf aramayı sonlandırdı.");
+                    endCall();
                 }
             });
 
             conn.on('close', () => {
-                appendSystemMessage("Karşı taraf ayrıldı veya bağlantı koptu.");
+                appendSystemMessage("Bağlantı koptu.");
                 disableChat();
+                if(currentCall) endCall();
             });
         }
 
-        // --- 7. MESAJLAŞMA İŞLEMLERİ (METİN & SES) ---
-        
-        // Metin Gönderme
+        // --- 5. MESAJLAŞMA (METİN & SESLİ MESAJ) ---
         document.getElementById('chat-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const text = messageInput.value.trim();
             if (text === '' || !currentConnection || !currentConnection.open) return;
-
             const msgId = Date.now().toString();
             currentConnection.send({ type: 'message', text: text, msgId: msgId });
             appendMessage(text, 'sent', msgId);
             messageInput.value = '';
         });
 
-        // Ping Gönderme
         document.getElementById('ping-btn').addEventListener('click', () => {
             if (currentConnection && currentConnection.open) {
-                currentConnection.send({ type: 'ping' });
-                triggerPing(true);
+                currentConnection.send({ type: 'ping' }); triggerPing(true);
             }
         });
 
-        // Ses Kaydı ve Gönderme
         micBtn.addEventListener('click', async () => {
             if (!currentConnection || !currentConnection.open) return;
+            if (currentCall) { alert("Arama esnasında sesli mesaj gönderilemez."); return; }
 
             if (!isRecording) {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream);
-                    
-                    mediaRecorder.ondataavailable = event => {
-                        if (event.data.size > 0) audioChunks.push(event.data);
-                    };
-                    
+                    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
                     mediaRecorder.onstop = () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         audioChunks = [];
-                        
-                        // Sesi Karşı Tarafa Gönder
                         const msgId = Date.now().toString();
                         currentConnection.send({ type: 'voice', audio: audioBlob, msgId: msgId });
                         appendVoiceMessage(audioBlob, 'sent', msgId);
-                        
-                        // Mikrofonu serbest bırak
                         stream.getTracks().forEach(track => track.stop());
                     };
-                    
-                    mediaRecorder.start();
-                    isRecording = true;
-                    
-                    // Arayüzü kayda göre güncelle
-                    micBtn.classList.add('recording');
-                    messageInput.disabled = true;
+                    mediaRecorder.start(); isRecording = true;
+                    micBtn.classList.add('recording'); messageInput.disabled = true;
                     messageInput.placeholder = "🔴 Ses kaydediliyor... (Bitirmek için tıklayın)";
-                } catch (err) {
-                    alert("Mikrofon erişimi reddedildi veya bulunamadı.");
-                    console.error("Mikrofon hatası:", err);
-                }
+                } catch (err) { alert("Mikrofon erişimi reddedildi."); }
             } else {
-                // Kaydı durdur
-                mediaRecorder.stop();
-                isRecording = false;
-                
-                // Arayüzü normale döndür
-                micBtn.classList.remove('recording');
-                messageInput.disabled = false;
+                mediaRecorder.stop(); isRecording = false;
+                micBtn.classList.remove('recording'); messageInput.disabled = false;
                 messageInput.placeholder = "Mesaj yazın...";
             }
         });
 
-        // --- EKRANA YAZDIRMA FONKSİYONLARI ---
+        // --- 6. CANLI SESLİ ARAMA (VOICE CALL) SİSTEMİ ---
 
+        // Arama Başlat
+        btnStartCall.addEventListener('click', async () => {
+            if (!currentConnection || !currentConnection.open) return;
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                currentCall = peer.call(currentConnection.peer, localStream);
+                
+                setupCallEvents(currentCall);
+                uiCallActive();
+                appendSystemMessage("📞 Aranıyor...");
+            } catch (err) { alert("Mikrofona erişilemedi. İzin verdiğinizden emin olun."); }
+        });
+
+        // Gelen Aramayı Yanıtla
+        btnAcceptCall.addEventListener('click', async () => {
+            callModal.style.display = 'none';
+            if(!pendingCall) return;
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                pendingCall.answer(localStream);
+                currentCall = pendingCall;
+                setupCallEvents(currentCall);
+                uiCallActive();
+                appendSystemMessage("📞 Arama yanıtlandı. Görüşme başladı.");
+            } catch (err) { alert("Mikrofona erişilemedi!"); btnRejectCall.click(); }
+        });
+
+        // Gelen Aramayı Reddet
+        btnRejectCall.addEventListener('click', () => {
+            callModal.style.display = 'none';
+            if (pendingCall) {
+                pendingCall.close();
+                pendingCall = null;
+            }
+            if (currentConnection && currentConnection.open) {
+                currentConnection.send({ type: 'call-rejected' });
+            }
+        });
+
+        // Kendi İsteğiyle Aramayı Kapat
+        btnEndCall.addEventListener('click', () => {
+            if (currentConnection && currentConnection.open) {
+                currentConnection.send({ type: 'call-ended' });
+            }
+            appendSystemMessage("🛑 Aramayı sonlandırdınız.");
+            endCall();
+        });
+
+        // Arama Olaylarını Dinle
+        function setupCallEvents(call) {
+            // Karşı tarafın sesi geldiğinde
+            call.on('stream', (remoteStream) => {
+                remoteLiveAudio.srcObject = remoteStream;
+            });
+            // Hata veya kapanma durumunda
+            call.on('close', endCall);
+            call.on('error', endCall);
+        }
+
+        // Aramayı Kökten Temizle
+        function endCall() {
+            if (currentCall) { currentCall.close(); currentCall = null; }
+            if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+            remoteLiveAudio.srcObject = null;
+            pendingCall = null;
+            uiCallInactive();
+        }
+
+        // Arama Arayüzü Güncellemeleri
+        function uiCallActive() {
+            btnStartCall.style.display = 'none';
+            btnEndCall.style.display = 'inline-block';
+        }
+        function uiCallInactive() {
+            // Sadece bağlantı açıksa arama butonunu tekrar göster
+            if(currentConnection && currentConnection.open) {
+                btnStartCall.style.display = 'inline-block';
+            } else {
+                btnStartCall.style.display = 'none';
+            }
+            btnEndCall.style.display = 'none';
+            callModal.style.display = 'none';
+        }
+
+        // --- 7. YARDIMCI GÖRSEL FONKSİYONLAR ---
         function appendMessage(text, type, msgId) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${type}`;
+            const msgDiv = document.createElement('div'); msgDiv.className = `message ${type}`;
             const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             let statusHtml = type === 'sent' ? `<span id="status-${msgId}" class="status-d">D</span>` : '';
-
-            msgDiv.innerHTML = `
-                <div>${text}</div>
-                <span class="msg-time">${time} ${statusHtml}</span>
-            `;
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            msgDiv.innerHTML = `<div>${text}</div><span class="msg-time">${time} ${statusHtml}</span>`;
+            chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function appendVoiceMessage(blob, type, msgId) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${type}`;
+            const msgDiv = document.createElement('div'); msgDiv.className = `message ${type}`;
             const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             let statusHtml = type === 'sent' ? `<span id="status-${msgId}" class="status-d">D</span>` : '';
-            
-            // Blob'u tarayıcıda çalınabilir bir URL'ye dönüştür
             const audioUrl = URL.createObjectURL(blob);
-
-            msgDiv.innerHTML = `
-                <div><audio controls src="${audioUrl}"></audio></div>
-                <span class="msg-time">${time} ${statusHtml}</span>
-            `;
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            msgDiv.innerHTML = `<div><audio controls src="${audioUrl}"></audio></div><span class="msg-time">${time} ${statusHtml}</span>`;
+            chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function triggerPing(isSender = false) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'message ping';
+            const msgDiv = document.createElement('div'); msgDiv.className = 'message ping';
             msgDiv.innerText = isSender ? 'PING GÖNDERİLDİ!' : '!!! PING !!!';
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-
+            chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
             document.body.classList.add('shake-animation');
             setTimeout(() => document.body.classList.remove('shake-animation'), 400);
         }
@@ -560,24 +592,19 @@
         function appendSystemMessage(text) {
             const sysDiv = document.createElement('div');
             sysDiv.style.textAlign = 'center'; sysDiv.style.color = '#9ca3af'; sysDiv.style.fontSize = '12px'; sysDiv.style.padding = '10px 0';
-            sysDiv.innerText = text;
-            chatBox.appendChild(sysDiv);
+            sysDiv.innerText = text; chatBox.appendChild(sysDiv); chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function disableChat() {
             chatTitle.innerText = "Bir Kişi Seçin";
             document.getElementById('connection-status').style.display = 'none';
-            messageInput.disabled = true;
-            document.getElementById('send-btn').disabled = true;
-            document.getElementById('ping-btn').disabled = true;
-            micBtn.disabled = true;
+            messageInput.disabled = true; document.getElementById('send-btn').disabled = true;
+            document.getElementById('ping-btn').disabled = true; micBtn.disabled = true;
+            btnStartCall.style.display = 'none'; btnEndCall.style.display = 'none';
             networkStatus.innerHTML = "Ağa Katıldın <span style='color:#10b981'>● Online</span>";
         }
 
-        // Mobil Geri Butonu
-        document.getElementById('back-btn').addEventListener('click', () => {
-            sidebar.classList.remove('hidden');
-        });
+        document.getElementById('back-btn').addEventListener('click', () => { sidebar.classList.remove('hidden'); });
     </script>
 </body>
 </html>
