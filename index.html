@@ -99,11 +99,8 @@
 
         /* Arama Butonları */
         .header-actions { display: flex; gap: 8px; }
-        .btn-header-call, .btn-header-video, .btn-header-screen, .btn-header-end { color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: none; }
-        .btn-header-call { background: #10b981; } 
-        .btn-header-video { background: #3b82f6; } 
-        .btn-header-screen { background: #8b5cf6; }
-        .btn-header-end { background: #ef4444; }
+        .btn-header-call, .btn-header-video, .btn-header-end { color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; display: none; }
+        .btn-header-call { background: #10b981; } .btn-header-video { background: #3b82f6; } .btn-header-end { background: #ef4444; }
         
         /* GÖRÜNTÜLÜ ARAMA ALANI */
         .video-overlay { position: absolute; top: 65px; left: 0; width: 100%; height: calc(100% - 65px); background: #000; z-index: 50; display: none; justify-content: center; align-items: center; }
@@ -120,13 +117,6 @@
         .msg-time { display: block; font-size: 11px; margin-top: 5px; opacity: 0.7; text-align: right; }
         .status-d { color: #93c5fd; font-weight: bold; margin-left: 5px; }
         .status-r { color: #10b981; font-weight: bold; margin-left: 5px; }
-
-        /* Yazıyor Animasyonu */
-        .typing-dots { animation: typingPulse 1.5s infinite; }
-        @keyframes typingPulse { 
-            0%, 100% { opacity: 0.4; } 
-            50% { opacity: 1; } 
-        }
 
         /* GİRDİ ALANI - KİLİTLİYKEN TIKLAMAYI ENGELLEYEN YER */
         .chat-input-area { display: flex; padding: 15px; background: #1e1e1e; border-top: 1px solid #333; gap: 10px; align-items: center; z-index: 10; }
@@ -245,12 +235,10 @@
                     <div class="chat-title-wrapper">
                         <h3 id="chat-title">Bir Kişi Seçin</h3>
                         <span id="connection-status" style="display:none;">Güvenli Bağlantı Kuruldu</span>
-                        <span id="typing-indicator" style="display:none; font-size: 11px; color: #8b5cf6; font-style: italic;">yazıyor...</span>
                     </div>
                     <div class="header-actions">
                         <button class="btn-header-call" id="btn-start-call">📞 Sesli</button>
                         <button class="btn-header-video" id="btn-start-video">📹 Görüntülü</button>
-                        <button class="btn-header-screen" id="btn-start-screen">💻 Ekran</button>
                         <button class="btn-header-end" id="btn-end-call">🛑 Kapat</button>
                     </div>
                 </div>
@@ -294,9 +282,6 @@
         let pendingCall = null;
         let statusTimer = null;
 
-        let typingTimeout = null;
-        let lastTypingTime = 0;
-
         // --- DOM ELEMENTLERİ ---
         const loginScreen = document.getElementById('login-screen'); 
         const appScreen = document.getElementById('app');
@@ -309,7 +294,6 @@
         
         const btnStartCall = document.getElementById('btn-start-call'); 
         const btnStartVideo = document.getElementById('btn-start-video');
-        const btnStartScreen = document.getElementById('btn-start-screen');
         const btnEndCall = document.getElementById('btn-end-call'); 
         const callModal = document.getElementById('call-modal');
         const btnAcceptCall = document.getElementById('btn-accept-call'); 
@@ -319,7 +303,6 @@
         const videoOverlay = document.getElementById('video-overlay'); 
         const remoteLiveAudio = document.getElementById('remote-live-audio');
         const micBtn = document.getElementById('mic-btn');
-        const typingIndicator = document.getElementById('typing-indicator');
 
         // Bildirim Sesi ve Titreşimi
         let isWindowFocused = true;
@@ -530,13 +513,8 @@
 
             peer.on('call', (call) => {
                 pendingCall = call; 
-                const type = call.metadata ? call.metadata.type : 'audio';
-                
-                let actionText = " sesli arıyor...";
-                if (type === 'video') actionText = " görüntülü arıyor...";
-                else if (type === 'screen') actionText = " ekranını paylaşıyor...";
-
-                document.getElementById('caller-name').innerText = call.peer.replace(PREFIX, '@') + actionText;
+                const isVideo = call.metadata && call.metadata.type === 'video';
+                document.getElementById('caller-name').innerText = call.peer.replace(PREFIX, '@') + (isVideo ? " görüntülü arıyor..." : " sesli arıyor...");
                 callModal.style.display = 'block'; 
                 playNotification(true);
             });
@@ -606,7 +584,6 @@
                 micBtn.disabled = false;
                 btnStartCall.style.display = 'inline-block'; 
                 btnStartVideo.style.display = 'inline-block'; 
-                btnStartScreen.style.display = 'inline-block';
                 
                 chatBox.innerHTML = ''; 
                 if(window.innerWidth <= 768) { sidebar.classList.add('hidden'); }
@@ -638,32 +615,12 @@
                     const span = document.getElementById('status-' + data.id); 
                     if (span) { span.innerText = 'R'; span.className = 'status-r'; } 
                 }
-                else if (data.type === 'typing') { 
-                    typingIndicator.style.display = 'inline-block';
-                    typingIndicator.classList.add('typing-dots');
-                    
-                    clearTimeout(typingTimeout);
-                    typingTimeout = setTimeout(() => {
-                        typingIndicator.style.display = 'none';
-                        typingIndicator.classList.remove('typing-dots');
-                    }, 2000);
-                }
             });
 
             conn.on('close', disableChat);
         }
 
-        // --- 5. MESAJ / YAZIYOR EFEKTİ / SES KAYDI / ARAMALAR ---
-        messageInput.addEventListener('input', () => {
-            if (!currentConnection || !currentConnection.open) return;
-            
-            const now = Date.now();
-            if (now - lastTypingTime > 1000) { 
-                currentConnection.send({ type: 'typing' });
-                lastTypingTime = now;
-            }
-        });
-
+        // --- 5. MESAJ / SES KAYDI / ARAMALAR ---
         document.getElementById('chat-form').addEventListener('submit', (e) => {
             e.preventDefault(); 
             const text = messageInput.value.trim(); 
@@ -722,27 +679,6 @@
         btnStartCall.addEventListener('click', () => startCall(false)); 
         btnStartVideo.addEventListener('click', () => startCall(true));
         
-        btnStartScreen.addEventListener('click', async () => {
-            if (!currentConnection || !currentConnection.open) return;
-            try {
-                localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-                
-                localVideo.srcObject = localStream; 
-                videoOverlay.style.display = 'flex'; 
-                
-                currentCall = peer.call(currentConnection.peer, localStream, { metadata: { type: 'screen' } });
-                setupCallEvents(currentCall, true); 
-                uiCallActive();
-
-                localStream.getVideoTracks()[0].onended = () => {
-                    endCall();
-                    if (currentConnection) currentConnection.send({ type: 'call-ended' });
-                };
-            } catch (err) { 
-                console.warn("Ekran paylaşımı iptal edildi veya izin verilmedi.", err); 
-            }
-        });
-
         async function startCall(isVideo) {
             if (!currentConnection || !currentConnection.open) return;
             try {
@@ -765,8 +701,7 @@
             callModal.style.display = 'none'; 
             if(!pendingCall) return;
             
-            const type = pendingCall.metadata ? pendingCall.metadata.type : 'audio';
-            const isVideo = (type === 'video' || type === 'screen');
+            const isVideo = pendingCall.metadata && pendingCall.metadata.type === 'video';
             
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
@@ -819,7 +754,6 @@
         function uiCallActive() { 
             btnStartCall.style.display = 'none'; 
             btnStartVideo.style.display = 'none'; 
-            btnStartScreen.style.display = 'none';
             btnEndCall.style.display = 'inline-block'; 
         }
         
@@ -827,11 +761,9 @@
             if(currentConnection && currentConnection.open) { 
                 btnStartCall.style.display = 'inline-block'; 
                 btnStartVideo.style.display = 'inline-block'; 
-                btnStartScreen.style.display = 'inline-block';
             } else { 
                 btnStartCall.style.display = 'none'; 
                 btnStartVideo.style.display = 'none'; 
-                btnStartScreen.style.display = 'none';
             } 
             btnEndCall.style.display = 'none'; 
             callModal.style.display = 'none'; 
@@ -869,7 +801,6 @@
         function disableChat() {
             chatTitle.innerText = "Bir Kişi Seçin"; 
             document.getElementById('connection-status').style.display = 'none';
-            typingIndicator.style.display = 'none';
             messageInput.disabled = true; 
             messageInput.placeholder = "Sohbet başlatmak için birini seçin...";
             document.getElementById('send-btn').disabled = true; 
@@ -877,7 +808,6 @@
             micBtn.disabled = true;
             btnStartCall.style.display = 'none'; 
             btnStartVideo.style.display = 'none'; 
-            btnStartScreen.style.display = 'none';
             btnEndCall.style.display = 'none';
         }
 
