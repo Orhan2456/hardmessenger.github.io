@@ -822,6 +822,386 @@
                 location.reload(); 
             } 
         });
+
+        // --- 827. SATIRDAN İTİBAREN YAPIŞTIRILACAK GRUP SİSTEMİ KODLARI (V3 - KAMERA & EKRAN DESTEKLİ) ---
+        
+        // 1. YENİ GRUP DEĞİŞKENLERİ
+        let groups = JSON.parse(localStorage.getItem('hrmsg_groups')) || {};
+        let activeChatType = 'direct'; 
+        let activeChatTarget = null;
+        let activeCalls = [];
+
+        // 2. ARAYÜZE DİNAMİK BUTON VE VİDEO IZGARASI ENJEKTE ETME
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="modal-overlay" id="group-create-modal" style="display:none; justify-content:center; align-items:center; z-index:999;">
+                <div class="status-create-box">
+                    <h3 style="color:#3b82f6; margin-bottom:15px;">Yeni Ağ Grubu Kur</h3>
+                    <input type="text" id="group-name-input" placeholder="Grup Adı (Örn: Birimler)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #444; background:#252526; color:white; margin-bottom:15px; outline:none;">
+                    <input type="text" id="group-members-input" placeholder="Kullanıcılar (virgülle ayır: ali,veli)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #444; background:#252526; color:white; margin-bottom:15px; outline:none;">
+                    <button id="btn-save-group" style="width:100%; padding:10px; background:#10b981; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:10px;">Grubu Kur</button>
+                    <button class="btn-cancel" id="btn-cancel-group" style="width:100%; padding:10px; background:transparent; border:1px solid #ef4444; color:#ef4444; border-radius:8px; cursor:pointer;">İptal</button>
+                </div>
+            </div>
+            <div id="multi-audio-container" style="display:none;"></div>
+        `);
+
+        // Ekran Paylaş Butonunu Header'a Ekle
+        const headerActions = document.querySelector('.header-actions');
+        if(!document.getElementById('btn-start-screen')) {
+            headerActions.insertAdjacentHTML('beforeend', `<button class="btn-header-video" id="btn-start-screen" style="display:none; background:#8b5cf6;">📺 Ekran Paylaş</button>`);
+        }
+
+        // Grup Videoları İçin Grid Container Ekle
+        if(!document.getElementById('multi-video-container')) {
+            document.getElementById('video-overlay').insertAdjacentHTML('afterbegin', `
+                <div id="multi-video-container" style="display:flex; flex-wrap:wrap; gap:10px; width:100%; height:100%; justify-content:center; align-items:center; padding:20px; background:rgba(0,0,0,0.9); z-index:51; overflow-y:auto;"></div>
+            `);
+        }
+
+        const friendsSectionDOM = document.querySelector('.friends-section');
+        if(!document.getElementById('groups-section')){
+            friendsSectionDOM.insertAdjacentHTML('beforebegin', `
+                <div class="friends-section" id="groups-section" style="border-bottom: 1px solid #333; flex: 0.8;">
+                    <div style="background: #2a2a2a; padding: 10px 15px; font-size: 12px; font-weight: bold; color: #9ca3af; display: flex; justify-content: space-between; align-items: center;">
+                        AĞ GRUPLARI <button id="btn-open-group-modal" style="background: #3b82f6; color: white; border: none; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer;">+ Yeni</button>
+                    </div>
+                    <ul class="friends-list" id="groups-list"></ul>
+                </div>
+            `);
+        }
+
+        // 3. GRUP OLUŞTURMA VE LİSTELEME
+        document.getElementById('btn-open-group-modal').addEventListener('click', () => { document.getElementById('group-create-modal').style.display = 'flex'; });
+        document.getElementById('btn-cancel-group').addEventListener('click', () => { document.getElementById('group-create-modal').style.display = 'none'; });
+
+        document.getElementById('btn-save-group').addEventListener('click', () => {
+            const name = document.getElementById('group-name-input').value.trim();
+            const membersRaw = document.getElementById('group-members-input').value;
+            if (!name) return;
+            
+            let membersList = membersRaw.split(',').map(s => s.trim().toLowerCase().replace(/\s+/g, '')).filter(s => s.length > 0);
+            if(!membersList.includes(myUsername)) membersList.push(myUsername); 
+            
+            groups[name] = membersList;
+            localStorage.setItem('hrmsg_groups', JSON.stringify(groups));
+            renderGroups();
+            document.getElementById('group-create-modal').style.display = 'none';
+            document.getElementById('group-name-input').value = ''; document.getElementById('group-members-input').value = '';
+
+            membersList.forEach(member => {
+                if (member !== myUsername) {
+                    let inviteConn = peer.connect(PREFIX + member);
+                    inviteConn.on('open', () => { 
+                        inviteConn.send({ type: 'group-invite', group: name, members: membersList }); 
+                        setTimeout(() => inviteConn.close(), 1000); 
+                    });
+                }
+            });
+        });
+
+        function renderGroups() {
+            const list = document.getElementById('groups-list'); list.innerHTML = '';
+            for (const [gName, members] of Object.entries(groups)) {
+                const li = document.createElement('li'); 
+                li.style.cssText = 'padding: 15px; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center; cursor: pointer;';
+                li.innerHTML = `<div style="color: #8b5cf6; font-weight: bold; font-size: 14px;" onclick="openGroupChat('${gName}')"># ${gName}</div><button style="background: transparent; color: #666; border: none; font-size: 16px; cursor: pointer;" onclick="deleteGroup('${gName}', event)">✖</button>`;
+                list.appendChild(li);
+            }
+        }
+
+        window.deleteGroup = function(gName, e) {
+            e.stopPropagation();
+            if(confirm("Ağ grubunu silmek istiyor musunuz?")) { delete groups[gName]; localStorage.setItem('hrmsg_groups', JSON.stringify(groups)); renderGroups(); }
+        }
+
+        window.openGroupChat = function(gName) {
+            activeChatType = 'group'; activeChatTarget = gName;
+            document.getElementById('chat-title').innerText = "Grup: " + gName;
+            document.getElementById('connection-status').innerText = groups[gName].length + " Üye (Mesh Ağ)";
+            document.getElementById('connection-status').style.display = 'block';
+            
+            document.getElementById('message-input').disabled = false; document.getElementById('message-input').placeholder = "Mesaj yazın...";
+            document.getElementById('send-btn').disabled = false; document.getElementById('ping-btn').disabled = false;
+            document.getElementById('mic-btn').disabled = false;
+            
+            document.getElementById('btn-start-call').style.display = 'inline-block';
+            document.getElementById('btn-start-video').style.display = 'inline-block'; 
+            document.getElementById('btn-start-screen').style.display = 'inline-block';
+            
+            document.getElementById('chat-box').innerHTML = '';
+            if(window.innerWidth <= 768) document.getElementById('sidebar').classList.add('hidden');
+        }
+
+        // 4. ESKİ FONKSİYONLARI EZME (Mesajlar & Medya)
+        const originalConnect = window.connectToUser;
+        window.connectToUser = function(targetRaw) {
+            activeChatType = 'direct'; activeChatTarget = targetRaw;
+            document.getElementById('btn-start-screen').style.display = 'inline-block';
+            if(originalConnect) originalConnect(targetRaw);
+        };
+
+        window.addEventListener('submit', (e) => {
+            if (e.target && e.target.id === 'chat-form') {
+                e.preventDefault(); e.stopImmediatePropagation(); 
+                const text = document.getElementById('message-input').value.trim(); 
+                if (!text) return;
+                const msgId = Date.now().toString();
+
+                if (activeChatType === 'direct' && currentConnection && currentConnection.open) {
+                    currentConnection.send({ type: 'message', text: text, msgId: msgId });
+                    appendMsg(text, 'sent', msgId);
+                } 
+                else if (activeChatType === 'group') {
+                    groups[activeChatTarget].forEach(member => {
+                        if (member === myUsername) return;
+                        let conn = peer.connect(PREFIX + member);
+                        conn.on('open', () => { conn.send({ type: 'group-msg', group: activeChatTarget, sender: myUsername, text: text, msgId: msgId }); });
+                    });
+                    appendMsg(text, 'sent', msgId);
+                }
+                document.getElementById('message-input').value = '';
+            }
+        }, true);
+
+        document.getElementById('mic-btn').addEventListener('click', async (e) => {
+            e.stopImmediatePropagation();
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); 
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = ev => { if (ev.data.size > 0) audioChunks.push(ev.data); };
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); audioChunks = []; const msgId = Date.now().toString();
+                        if(activeChatType === 'direct' && currentConnection) {
+                            currentConnection.send({ type: 'voice', audio: audioBlob, msgId: msgId });
+                        } else if (activeChatType === 'group') {
+                            groups[activeChatTarget].forEach(member => {
+                                if (member === myUsername) return;
+                                let conn = peer.connect(PREFIX + member);
+                                conn.on('open', () => conn.send({ type: 'group-voice', group: activeChatTarget, sender: myUsername, audio: audioBlob, msgId: msgId }));
+                            });
+                        }
+                        appendVoice(audioBlob, 'sent', msgId); stream.getTracks().forEach(track => track.stop());
+                    };
+                    mediaRecorder.start(); isRecording = true;
+                    document.getElementById('mic-btn').classList.add('recording'); 
+                    document.getElementById('message-input').disabled = true; document.getElementById('message-input').placeholder = "🔴 Kaydediliyor...";
+                } catch (err) { alert("Mikrofon izni alınamadı."); }
+            } else {
+                mediaRecorder.stop(); isRecording = false; 
+                document.getElementById('mic-btn').classList.remove('recording'); 
+                document.getElementById('message-input').disabled = false; document.getElementById('message-input').placeholder = "Mesaj yazın...";
+            }
+        }, true);
+
+        // --- GELİŞMİŞ ÇAĞRI (SES / VİDEO / EKRAN) MANTIĞI ---
+        document.getElementById('btn-start-call').addEventListener('click', (e) => { e.stopImmediatePropagation(); initCall('audio'); }, true);
+        document.getElementById('btn-start-video').addEventListener('click', (e) => { e.stopImmediatePropagation(); initCall('video'); }, true);
+        document.getElementById('btn-start-screen').addEventListener('click', (e) => { e.stopImmediatePropagation(); initCall('screen'); }, true);
+
+        async function initCall(callType) {
+            try {
+                if (callType === 'screen') {
+                    localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                } else {
+                    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: (callType === 'video') });
+                }
+
+                document.getElementById('video-overlay').style.display = 'flex';
+
+                if (activeChatType === 'direct') {
+                    if (callType === 'video' || callType === 'screen') {
+                        document.getElementById('local-video').srcObject = localStream; 
+                        document.getElementById('local-video').style.display = 'block';
+                        document.getElementById('remote-video').style.display = 'block';
+                        document.getElementById('multi-video-container').style.display = 'none';
+                    }
+                    let call = peer.call(PREFIX + activeChatTarget, localStream, { metadata: { type: callType } });
+                    activeCalls.push(call);
+                    setupDirectCall(call, callType);
+                } 
+                else if (activeChatType === 'group') {
+                    document.getElementById('remote-video').style.display = 'none'; // Birebir videoyu gizle
+                    document.getElementById('multi-video-container').style.display = 'flex';
+                    document.getElementById('multi-video-container').innerHTML = ''; 
+                    document.getElementById('multi-audio-container').innerHTML = ''; 
+                    
+                    if (callType === 'video' || callType === 'screen') {
+                        document.getElementById('local-video').srcObject = localStream; 
+                        document.getElementById('local-video').style.display = 'block';
+                    }
+
+                    groups[activeChatTarget].forEach(member => {
+                        if(member !== myUsername) {
+                            let call = peer.call(PREFIX + member, localStream, { metadata: { group: activeChatTarget, type: callType, sender: myUsername } });
+                            activeCalls.push(call); 
+                            call.on('stream', (rStream) => { handleGroupStream(rStream, call.metadata.type, member); });
+                        }
+                    });
+                }
+                
+                document.getElementById('btn-start-call').style.display = 'none'; 
+                document.getElementById('btn-start-video').style.display = 'none'; 
+                document.getElementById('btn-start-screen').style.display = 'none'; 
+                document.getElementById('btn-end-call').style.display = 'inline-block';
+            } catch (err) { alert("İzin verilmedi veya iptal edildi."); }
+        }
+
+        // ÇAĞRI YANITLAMA KISMI (Capture Override)
+        document.getElementById('btn-accept-call').addEventListener('click', async (e) => {
+            e.stopImmediatePropagation();
+            document.getElementById('call-modal').style.display = 'none'; 
+            if(!pendingCall) return;
+            
+            const callType = pendingCall.metadata.type; // 'audio', 'video', 'screen'
+            const isGroup = pendingCall.metadata.group;
+            
+            try {
+                // Ekran paylaşımı gelse bile, yanıtlayan kişi standart kamera/ses ile katılır
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: (callType === 'video' || callType === 'screen') });
+                pendingCall.answer(localStream);
+                
+                document.getElementById('video-overlay').style.display = 'flex';
+
+                if (isGroup) {
+                    document.getElementById('remote-video').style.display = 'none';
+                    document.getElementById('multi-video-container').style.display = 'flex';
+                    if (callType === 'video' || callType === 'screen') {
+                        document.getElementById('local-video').srcObject = localStream;
+                        document.getElementById('local-video').style.display = 'block';
+                    }
+                    activeCalls.push(pendingCall);
+                    pendingCall.on('stream', (rStream) => { handleGroupStream(rStream, callType, pendingCall.metadata.sender || pendingCall.peer.replace(PREFIX, '')); });
+                } else {
+                    if(callType === 'video' || callType === 'screen') { 
+                        document.getElementById('local-video').srcObject = localStream; 
+                        document.getElementById('local-video').style.display = 'block';
+                        document.getElementById('remote-video').style.display = 'block';
+                        document.getElementById('multi-video-container').style.display = 'none';
+                    }
+                    activeCalls = [pendingCall];
+                    setupDirectCall(pendingCall, callType);
+                }
+                
+                document.getElementById('btn-start-call').style.display = 'none'; 
+                document.getElementById('btn-start-video').style.display = 'none'; 
+                document.getElementById('btn-start-screen').style.display = 'none';
+                document.getElementById('btn-end-call').style.display = 'inline-block';
+            } catch (err) { document.getElementById('btn-reject-call').click(); }
+        }, true);
+
+        // Doğrudan Çağrı Kurulumu
+        function setupDirectCall(call, callType) {
+            call.on('stream', (rStream) => { 
+                if(callType === 'video' || callType === 'screen') { 
+                    document.getElementById('remote-video').srcObject = rStream; 
+                } else { 
+                    let audio = document.createElement('audio'); audio.autoplay = true; audio.srcObject = rStream; 
+                    document.getElementById('multi-audio-container').appendChild(audio); 
+                } 
+            });
+            call.on('close', endCall); call.on('error', endCall);
+        }
+
+        // Çoklu (Grup) Video/Ekran Izgarası Kurulumu
+        function handleGroupStream(rStream, callType, memberId) {
+            if (callType === 'audio') {
+                let audio = document.createElement('audio'); audio.autoplay = true; audio.srcObject = rStream; 
+                document.getElementById('multi-audio-container').appendChild(audio);
+            } else {
+                let vContainer = document.getElementById('multi-video-container');
+                let wrapper = document.createElement('div');
+                wrapper.style.cssText = 'position:relative; width:45%; max-width:400px; aspect-ratio: 16/9; border:2px solid #8b5cf6; border-radius:12px; overflow:hidden; background:#111; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);';
+                
+                let vid = document.createElement('video');
+                vid.autoplay = true; vid.playsInline = true; vid.srcObject = rStream; 
+                vid.style.cssText = 'width:100%; height:100%; object-fit:cover;';
+                
+                let nameLabel = document.createElement('div');
+                nameLabel.innerText = '@' + memberId + (callType === 'screen' ? ' (Ekran)' : '');
+                nameLabel.style.cssText = 'position:absolute; bottom:8px; left:8px; background:rgba(0,0,0,0.7); padding:4px 8px; border-radius:6px; font-size:12px; font-weight:bold; color:#10b981; border: 1px solid #10b981;';
+                
+                wrapper.appendChild(vid); wrapper.appendChild(nameLabel);
+                vContainer.appendChild(wrapper);
+            }
+        }
+
+        document.getElementById('btn-end-call').addEventListener('click', (e) => { 
+            e.stopImmediatePropagation();
+            if (currentConnection) currentConnection.send({ type: 'call-ended' }); 
+            endCall(); 
+        }, true);
+
+        window.endCall = function() {
+            activeCalls.forEach(c => c.close()); activeCalls = [];
+            if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+            document.getElementById('remote-video').srcObject = null; 
+            document.getElementById('local-video').srcObject = null; 
+            document.getElementById('video-overlay').style.display = 'none'; 
+            document.getElementById('multi-audio-container').innerHTML = '';
+            document.getElementById('multi-video-container').innerHTML = ''; // Videoları temizle
+            pendingCall = null; 
+            
+            document.getElementById('btn-start-call').style.display = 'inline-block'; 
+            document.getElementById('btn-start-video').style.display = 'inline-block'; 
+            document.getElementById('btn-start-screen').style.display = 'inline-block'; 
+            document.getElementById('btn-end-call').style.display = 'none';
+        };
+
+        // 5. P2P AĞ DİNLEYİCİSİ (Yenilenmiş Metadata ile)
+        setTimeout(() => { 
+            if(peer) {
+                renderGroups();
+                peer.on('connection', (conn) => {
+                    conn.on('data', (data) => {
+                        if (data.type === 'group-invite') {
+                            if (!groups[data.group]) { 
+                                groups[data.group] = data.members; 
+                                localStorage.setItem('hrmsg_groups', JSON.stringify(groups)); 
+                                renderGroups(); 
+                                if(typeof playNotification === 'function') playNotification(); 
+                            }
+                        }
+                        else if (data.type === 'group-msg' || data.type === 'group-voice') {
+                            if (!groups[data.group]) { groups[data.group] = [data.sender, myUsername]; localStorage.setItem('hrmsg_groups', JSON.stringify(groups)); renderGroups(); } 
+                            else if (!groups[data.group].includes(data.sender)) { groups[data.group].push(data.sender); localStorage.setItem('hrmsg_groups', JSON.stringify(groups)); }
+                            
+                            if (activeChatType === 'group' && activeChatTarget === data.group) {
+                                if(data.type === 'group-msg') appendMsg(data.text, 'group-received', data.sender);
+                                else appendVoice(new Blob([data.audio], { type: 'audio/webm' }), 'group-received', data.sender);
+                            }
+                        }
+                    });
+                });
+                peer.on('call', (call) => {
+                    if(call.metadata && call.metadata.group) {
+                        pendingCall = call;
+                        let callDesc = call.metadata.type === 'screen' ? 'ekranını paylaşıyor' : (call.metadata.type === 'video' ? 'görüntülü arıyor' : 'sesli arıyor');
+                        document.getElementById('caller-name').innerText = `Grup (${call.metadata.group}): @${call.metadata.sender || 'Biri'} ${callDesc}...`;
+                        document.getElementById('call-modal').style.display = 'block';
+                    }
+                });
+            }
+        }, 1500);
+
+        // 6. MESAJ GÖRSELLERİ
+        function appendMsg(text, type, senderOrId) { 
+            const div = document.createElement('div'); 
+            div.style.cssText = `max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-wrap: break-word; align-self: ${type==='sent'?'flex-end':'flex-start'}; background: ${type==='sent'?'#2563eb':(type==='group-received'?'#4c1d95':'#2d2d30')}; border-bottom-${type==='sent'?'right':'left'}-radius: 2px; ${type==='group-received'?'border:1px solid #7c3aed; box-shadow: 0 2px 10px rgba(124, 58, 237, 0.2);':''}`;
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
+            let content = type === 'group-received' ? `<span style="font-size:11px; font-weight:bold; color:#a78bfa; margin-bottom:4px; display:block;">@${senderOrId}</span>` : '';
+            div.innerHTML = `${content}<div>${text}</div><span style="display:block; font-size:11px; margin-top:5px; opacity:0.7; text-align:right;">${time} ${type === 'sent' ? '<span class="status-d">D</span>' : ''}</span>`; 
+            document.getElementById('chat-box').appendChild(div); document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight; 
+        }
+        
+        function appendVoice(blob, type, senderOrId) { 
+            const div = document.createElement('div'); 
+            div.style.cssText = `max-width: 80%; padding: 12px 16px; border-radius: 12px; align-self: ${type==='sent'?'flex-end':'flex-start'}; background: ${type==='sent'?'#2563eb':(type==='group-received'?'#4c1d95':'#2d2d30')}; border-bottom-${type==='sent'?'right':'left'}-radius: 2px; ${type==='group-received'?'border:1px solid #7c3aed;':''}`;
+            let content = type === 'group-received' ? `<span style="font-size:11px; font-weight:bold; color:#a78bfa; margin-bottom:4px; display:block;">@${senderOrId}</span>` : '';
+            div.innerHTML = `${content}<div><audio controls src="${URL.createObjectURL(blob)}" style="height:35px; max-width:200px; outline:none; border-radius:20px;"></audio></div>`; 
+            document.getElementById('chat-box').appendChild(div); document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight; 
+        }
+        // --- GRUP SİSTEMİ KODU SONU ---
     </script>
 </body>
 </html>
